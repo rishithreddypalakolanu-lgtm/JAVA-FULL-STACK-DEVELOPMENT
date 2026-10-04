@@ -1,0 +1,1153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Redux &amp; Client–Server Communication</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800;900&family=Overpass+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF2F7; --paper:#FFFFFF; --ink:#14213D; --muted:#56657F; --line:#C9D3E1; --soft:#E2E8F1;
+  --redux:#764ABC; --redux-soft:#EFE7FA; --server:#0E9F9A; --server-soft:#DDF4F2;
+  --action:#E9A100; --action-soft:#FFF3D1; --danger:#D6404E; --danger-soft:#FBE3E5; --ok:#2E9D5B; --ok-soft:#DFF3E7;
+  --code-bg:#18213B; --code-ink:#E6EDF7;
+  --sans:"Overpass", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --mono:"Overpass Mono", "Cascadia Mono", Consolas, "Courier New", monospace;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1630; --paper:#17213E; --ink:#E9EEF8; --muted:#9FAECA; --line:#34426A; --soft:#1F2B4D;
+    --redux:#A07BE0; --redux-soft:#2B2250; --server:#2CC3BD; --server-soft:#123A45;
+    --action:#F4B72A; --action-soft:#3A3219; --danger:#F06673; --danger-soft:#43202B; --ok:#4CC282; --ok-soft:#173A2B;
+    --code-bg:#0A1024;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1630; --paper:#17213E; --ink:#E9EEF8; --muted:#9FAECA; --line:#34426A; --soft:#1F2B4D;
+  --redux:#A07BE0; --redux-soft:#2B2250; --server:#2CC3BD; --server-soft:#123A45;
+  --action:#F4B72A; --action-soft:#3A3219; --danger:#F06673; --danger-soft:#43202B; --ok:#4CC282; --ok-soft:#173A2B;
+  --code-bg:#0A1024;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased}
+#wrap{position:relative;width:100%;height:100%;overflow:hidden}
+#stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform:translate(-50%,-50%) scale(var(--s,1));transform-origin:center}
+
+/* ---------- slides ---------- */
+.slide{position:absolute;inset:0;padding:44px 72px 104px;opacity:0;visibility:hidden;transform:translateX(48px);
+  transition:opacity .5s ease, transform .5s cubic-bezier(.2,.8,.2,1), visibility .5s}
+.slide.active{opacity:1;visibility:visible;transform:none}
+.slide.past{transform:translateX(-48px)}
+h1{font-size:76px;line-height:.98;font-weight:900;letter-spacing:-.02em;margin:0}
+h2{font-size:42px;line-height:1.08;font-weight:800;letter-spacing:-.01em;margin:0 0 8px}
+.lede{font-size:20px;line-height:1.45;color:var(--muted);margin:0;max-width:62ch}
+.row{display:flex;gap:28px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:18px}
+.small{font-size:15px;color:var(--muted);line-height:1.45}
+b,strong{font-weight:800}
+code,.mono{font-family:var(--mono)}
+
+/* ---------- buttons ---------- */
+.btn{font:700 16px/1 var(--sans);border:0;border-radius:10px;padding:13px 18px;cursor:pointer;background:var(--redux);color:#fff;
+  transition:transform .15s, filter .15s, background .2s;white-space:nowrap}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:scale(.96)}
+.btn.teal{background:var(--server)}
+.btn.amber{background:var(--action);color:#231a00}
+.btn.red{background:var(--danger)}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--line)}
+.btn[disabled]{opacity:.5;cursor:default}
+button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--action);outline-offset:3px}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ---------- code ---------- */
+.code{font:14px/1.6 var(--mono);background:var(--code-bg);color:var(--code-ink);border-radius:12px;padding:12px 0;margin:0;overflow:hidden}
+.code .ln{display:block;padding:0 16px;white-space:pre;transition:background .3s, box-shadow .3s}
+.code .ln.hl{background:rgba(244,183,42,.22);box-shadow:inset 4px 0 0 #F4B72A}
+.code .k{color:#C8A8FF}.code .s{color:#9FE3B5}.code .c{color:#7D8BA8;font-style:italic}.code .n{color:#FFD37A}.code .t{color:#7FD1FF}
+
+/* ---------- svg helpers ---------- */
+svg text{font-family:var(--sans)}
+.st{fill:var(--paper);stroke:var(--ink);stroke-width:4}
+.lbl{fill:var(--ink);font-weight:800;font-size:17px}
+.lbl-s{fill:var(--muted);font-size:14px;font-weight:600}
+.trk{fill:none;stroke-width:10;stroke-linecap:round;stroke-linejoin:round}
+.trk.redux{stroke:var(--redux)} .trk.server{stroke:var(--server)} .trk.amber{stroke:var(--action)} .trk.grey{stroke:var(--line)}
+.draw{stroke-dasharray:1;stroke-dashoffset:1}
+.slide.active .draw{animation:draw 1.8s cubic-bezier(.6,0,.2,1) forwards}
+.slide.active .draw.d2{animation-delay:.9s}
+@keyframes draw{to{stroke-dashoffset:0}}
+.train rect{fill:var(--ink)} .train text{fill:var(--paper);font:700 12px var(--mono)}
+.pop{animation:pop .5s cubic-bezier(.3,1.8,.5,1)}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+.shake{animation:shake .5s}
+@keyframes shake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.flash{animation:flash .9s}
+@keyframes flash{0%{background:var(--action-soft)}100%{background:transparent}}
+.popin{animation:popin .45s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes popin{from{opacity:0;transform:translateY(10px) scale(.9)}to{opacity:1;transform:none}}
+
+/* ---------- chrome: metro progress, notes ---------- */
+#metro{position:absolute;left:72px;right:72px;bottom:26px;height:52px}
+#metro .rail{position:absolute;left:44px;right:44px;top:20px;height:6px;border-radius:3px;background:var(--line)}
+#metro .rail i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--redux);transition:width .6s cubic-bezier(.2,.8,.2,1)}
+#metro .stop{position:absolute;top:12px;width:22px;height:22px;margin-left:-11px;border-radius:50%;border:4px solid var(--line);background:var(--paper);cursor:pointer;padding:0;transition:border-color .3s, transform .3s}
+#metro .stop.done{border-color:var(--redux)}
+#metro .stop.cur{border-color:var(--redux);background:var(--redux);transform:scale(1.25)}
+#metro .name{position:absolute;top:36px;font:700 13px var(--sans);color:var(--redux);transform:translateX(-50%);white-space:nowrap;transition:left .6s cubic-bezier(.2,.8,.2,1)}
+#metro .nav{position:absolute;top:6px;width:34px;height:34px;border-radius:50%;border:0;background:var(--paper);color:var(--ink);font:800 20px/1 var(--sans);cursor:pointer;box-shadow:inset 0 0 0 2px var(--line)}
+#metro .nav.prev{left:0}#metro .nav.next{right:0}
+#tools{position:absolute;top:18px;right:24px;display:flex;gap:8px;z-index:5}
+#tools button{font:700 13px var(--sans);background:var(--paper);color:var(--muted);border:0;border-radius:8px;padding:7px 10px;cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--line)}
+#count{font:700 13px var(--mono);color:var(--muted);padding:7px 4px}
+#notes{position:absolute;left:72px;right:72px;bottom:92px;background:var(--ink);color:var(--bg);border-radius:14px;padding:16px 20px;font-size:17px;line-height:1.5;
+  transform:translateY(20px);opacity:0;visibility:hidden;transition:.3s;z-index:6}
+#notes.show{transform:none;opacity:1;visibility:visible}
+#notes b{color:var(--action)}
+
+/* ---------- slide specific ---------- */
+/* title */
+#s-title .grid{display:grid;grid-template-columns:1fr 520px;align-items:center;height:100%;gap:20px}
+#s-title .sub{font-size:24px;line-height:1.4;color:var(--muted);margin:22px 0 28px;max-width:30ch}
+#s-title .hint{display:flex;gap:18px;flex-wrap:wrap;font-size:15px;color:var(--muted)}
+#s-title kbd{font:700 13px var(--mono);background:var(--paper);border-radius:6px;padding:3px 7px;box-shadow:inset 0 -2px 0 var(--line), inset 0 0 0 1.5px var(--line);color:var(--ink)}
+#s-title .course{display:inline-block;font-weight:800;font-size:15px;color:var(--server);margin-bottom:16px}
+
+/* trees */
+.node rect{fill:var(--paper);stroke:var(--line);stroke-width:2.5;transition:fill .3s, stroke .3s}
+.node text{font:700 15px var(--mono);fill:var(--ink)}
+.node.btnnode rect{fill:var(--action-soft);stroke:var(--action)}
+.node.mid rect{fill:var(--soft);stroke:var(--muted);stroke-dasharray:6 4}
+.node.hit rect{fill:var(--ok-soft);stroke:var(--ok)}
+.node .tag{font:700 12px var(--sans);fill:var(--muted)}
+.edge{fill:none;stroke:var(--line);stroke-width:3}
+.badge-c{fill:var(--danger)} .badge-t{fill:#fff;font:800 13px var(--sans)}
+.storenode rect{fill:var(--redux);stroke:none} .storenode text{fill:#fff;font:800 16px var(--mono)}
+.stat{display:flex;align-items:baseline;gap:10px;font-weight:700;color:var(--muted)}
+.stat strong{font-size:44px;line-height:1;color:var(--danger);font-weight:900;min-width:1ch;text-align:right}
+.stat.good strong{color:var(--ok)}
+.dash{fill:none;stroke:var(--redux);stroke-width:3;stroke-dasharray:8 6}
+
+/* analogy */
+#nb .em{font-size:72px;dominant-baseline:central;text-anchor:middle}
+#nb .map{font:800 15px var(--mono);fill:var(--redux)}
+#nb .board{fill:var(--paper);stroke:var(--ink);stroke-width:4}
+#nb .reader{transition:transform .3s}
+#nb .rline{stroke:var(--redux);stroke-width:3;stroke-dasharray:6 6;opacity:.25;transition:opacity .3s}
+#nb .rline.on{opacity:1}
+
+/* four parts */
+.parts{position:relative;height:110px;margin:34px 0 14px}
+.parts .rail{position:absolute;left:60px;right:60px;top:40px;height:10px;border-radius:5px;background:var(--redux)}
+.parts .p{position:absolute;top:22px;white-space:nowrap;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;background:none;border:0;cursor:pointer;color:var(--ink);font:800 20px var(--sans)}
+.parts .p span{width:46px;height:46px;border-radius:50%;background:var(--paper);border:6px solid var(--ink);transition:.3s}
+.parts .p.on span{background:var(--action);border-color:var(--ink);transform:scale(1.15)}
+.parts .cab{position:absolute;top:-30px;height:34px;padding:0 12px;transform:translateX(-50%);border-radius:9px;background:var(--ink);transition:left .7s cubic-bezier(.5,0,.2,1);display:grid;place-items:center;color:var(--bg);font:800 12px var(--mono);z-index:2}
+.partcard{display:grid;grid-template-columns:1fr 1.25fr;gap:28px;align-items:start;background:var(--paper);border-radius:18px;padding:26px 28px;box-shadow:inset 0 0 0 2px var(--line)}
+.partcard h3{font-size:30px;margin:0 0 10px;color:var(--redux)}
+.partcard p{font-size:20px;line-height:1.5;margin:0}
+.partcard .eg{margin-top:14px;font-size:16px;color:var(--muted)}
+
+/* loop */
+#loopsvg .stn text{font-weight:800}
+.panel{background:var(--paper);border-radius:16px;padding:18px 20px;box-shadow:inset 0 0 0 2px var(--line)}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;padding:7px 10px;border-radius:10px;font-size:16px;line-height:1.4;color:var(--muted);transition:background .3s,color .3s}
+.steps li i{font-style:normal;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--soft);font:800 13px var(--sans);color:var(--ink)}
+.steps li.on{background:var(--action-soft);color:var(--ink)}
+.steps li.on i{background:var(--action);color:#231a00}
+.json{font:15px/1.55 var(--mono);background:var(--code-bg);color:var(--code-ink);border-radius:12px;padding:12px 16px;margin:0;white-space:pre}
+.json .chg{background:rgba(244,183,42,.3);border-radius:4px;transition:background 1s}
+.log{list-style:none;margin:0;padding:0;font:13px/1.5 var(--mono);display:grid;gap:4px;max-height:100px;overflow:hidden}
+.log li{background:var(--redux-soft);color:var(--ink);border-radius:6px;padding:3px 8px}
+
+/* rules */
+.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:6px}
+.rule{background:var(--paper);border-radius:18px;padding:22px;box-shadow:inset 0 0 0 2px var(--line);opacity:.25;transform:translateY(16px);transition:.6s cubic-bezier(.2,.8,.2,1)}
+.rule.on{opacity:1;transform:none}
+.rule h3{font-size:23px;line-height:1.2;margin:14px 0 8px}
+.rule p{font-size:16px;line-height:1.45;color:var(--muted);margin:0 0 12px}
+.rule .ex{font:14px/1.5 var(--mono);border-radius:8px;padding:6px 10px;margin-top:6px}
+.rule .bad{background:var(--danger-soft);color:var(--danger)} .rule .good{background:var(--ok-soft);color:var(--ok)}
+.rule svg .ic{fill:none;stroke:var(--redux);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.rule.on svg .ic{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.2s .2s forwards}
+
+/* counter example */
+#s-counter .cols{display:grid;grid-template-columns:660px 1fr;gap:26px}
+.tabs{display:flex;gap:4px;margin-bottom:-2px}
+.tabs button{font:700 14px var(--mono);border:0;background:var(--soft);color:var(--muted);padding:9px 14px;border-radius:10px 10px 0 0;cursor:pointer;transition:.2s}
+.tabs button.on{background:var(--code-bg);color:#fff}
+#s-counter .code{border-top-left-radius:0;height:372px;font-size:13px;line-height:1.55}
+.bigcount{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.bigcount .num{font:900 84px/1 var(--sans);color:var(--redux);min-width:2ch;text-align:center}
+.bigcount .btn{font-size:28px;width:64px;height:64px;padding:0}
+.flowline{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font:700 13px var(--sans);color:var(--muted);margin:12px 0}
+.flowline span{padding:5px 9px;border-radius:999px;background:var(--soft);transition:.25s}
+.flowline span.on{background:var(--action);color:#231a00;transform:scale(1.06)}
+
+/* real apps */
+#s-real .cols{display:grid;grid-template-columns:230px 290px 1fr;gap:30px;align-items:start}
+.scen{display:grid;gap:8px}
+.scen button{text-align:left;font:700 17px var(--sans);border:0;border-radius:12px;padding:12px 14px;background:var(--paper);color:var(--ink);cursor:pointer;box-shadow:inset 0 0 0 2px var(--line);transition:.2s;display:flex;gap:10px;align-items:center}
+.scen button.on{background:var(--redux);color:#fff;box-shadow:none}
+.scen .seen{font-size:14px;color:var(--muted);line-height:1.45;margin-top:10px}
+.phone{width:270px;height:470px;border-radius:34px;background:var(--ink);padding:10px;position:relative}
+.screen{width:100%;height:100%;border-radius:26px;background:#fff;color:#14213D;overflow:hidden;display:flex;flex-direction:column;transition:background .6s,color .6s;font-size:14px}
+.screen.dark{background:#10172B;color:#E9EEF8}
+.sbar{display:flex;justify-content:space-between;padding:8px 18px 4px;font:700 11px var(--sans);opacity:.7}
+.ph-top{display:flex;justify-content:space-between;align-items:center;padding:8px 16px 10px;font-size:18px;font-weight:900;border-bottom:1px solid rgba(128,140,170,.25)}
+.ph-body{flex:1;padding:14px 16px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.ph-tabs{display:flex;justify-content:space-around;padding:8px 0 12px;border-top:1px solid rgba(128,140,170,.25);font-size:11px;font-weight:700;text-align:center}
+.ph-tabs span{position:relative;line-height:1.3}
+.bdg{position:absolute;top:-6px;right:-12px;min-width:18px;height:18px;border-radius:9px;background:#D6404E;color:#fff;font:800 11px/18px var(--sans);font-style:normal;padding:0 5px;text-align:center}
+.bdg.zero{display:none}
+.rel{position:relative;display:inline-block}
+.prod{display:flex;gap:12px;align-items:center;background:rgba(128,140,170,.12);border-radius:14px;padding:12px}
+.prod .img{font-size:38px}
+.phbtn{border:0;border-radius:10px;padding:11px;font:800 14px var(--sans);background:#E9A100;color:#231a00;cursor:pointer}
+.rowi{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(128,140,170,.2)}
+.toggle{width:46px;height:26px;border-radius:13px;background:#C9D3E1;position:relative;transition:.3s;border:0;cursor:pointer;padding:0}
+.toggle::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.3s}
+.toggle.on{background:#764ABC}.toggle.on::after{left:23px}
+.chat{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(128,140,170,.2)}
+.chat .av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:18px;background:rgba(128,140,170,.18)}
+.chat small{display:block;opacity:.65;font-size:12px}
+.chat.unread b{color:#0E9F9A}
+.chat .dot{min-width:20px;height:20px;border-radius:10px;background:#0E9F9A;color:#fff;font:800 11px/20px var(--sans);text-align:center}
+.song{display:flex;gap:10px;align-items:center;padding:8px;border-radius:10px;cursor:pointer}
+.song.on{background:rgba(118,74,188,.14);color:#764ABC;font-weight:800}
+.mini{margin:0 10px 10px;background:#14213D;color:#fff;border-radius:14px;padding:10px 12px;font-size:13px}
+.mini .bar{height:4px;border-radius:2px;background:rgba(255,255,255,.25);margin-top:8px;overflow:hidden}
+.mini .bar i{display:block;height:100%;width:0;background:#F4B72A}
+.readers{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.readers li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--soft);font-weight:700;transition:.3s}
+.readers li::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--line);transition:.3s}
+.readers li.on{background:var(--ok-soft)}
+.readers li.on::before{background:var(--ok);box-shadow:0 0 0 5px rgba(46,157,91,.2)}
+
+/* restaurant */
+#rest .em{font-size:64px;dominant-baseline:central;text-anchor:middle}
+#rest .map{font:800 15px var(--mono);fill:var(--server);text-anchor:middle}
+#rest .who{font:800 18px var(--sans);fill:var(--ink);text-anchor:middle}
+.caption{font-size:22px;font-weight:700;min-height:34px;text-align:center;margin-top:4px}
+.caption code{background:var(--server-soft);color:var(--server);padding:2px 8px;border-radius:6px;font-size:19px}
+
+/* request / response */
+#rr .box{fill:var(--paper);stroke:var(--ink);stroke-width:3}
+#rr .env rect{stroke:none}
+#rr .env text{fill:#fff;font:800 13px var(--mono);text-anchor:middle;dominant-baseline:central}
+.rrcards{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:12px}
+.rrcard{background:var(--paper);border-radius:14px;padding:14px 18px;box-shadow:inset 0 0 0 2px var(--line);min-height:150px}
+.rrcard h4{margin:0 0 8px;font-size:15px;color:var(--muted)}
+.rrcard pre{margin:0;font:14px/1.55 var(--mono);white-space:pre-wrap}
+.status{display:inline-block;font:800 15px var(--mono);padding:3px 10px;border-radius:6px;color:#fff}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--muted);align-items:center}
+.legend span{font:700 13px var(--mono);padding:3px 8px;border-radius:6px;color:#fff}
+.chk{display:flex;gap:8px;align-items:center;font-weight:700;font-size:15px;cursor:pointer;color:var(--muted)}
+.chk input{width:18px;height:18px;accent-color:var(--danger)}
+
+/* methods */
+.methods{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:6px 0 18px}
+.m{border:0;text-align:left;cursor:pointer;border-radius:16px;padding:18px;background:var(--paper);color:var(--ink);box-shadow:inset 0 0 0 2px var(--line);transition:.25s;font-family:var(--sans)}
+.m .verb{display:inline-block;font:800 20px var(--mono);color:#fff;border-radius:8px;padding:4px 12px}
+.m .crud{font-size:26px;font-weight:900;margin:12px 0 4px}
+.m .what{font-size:16px;color:var(--muted);line-height:1.4}
+.m.on{transform:translateY(-6px);box-shadow:inset 0 0 0 3px var(--ink)}
+
+/* async */
+#s-async .lane{position:relative;height:62px;margin:0 0 8px;display:block}
+#s-async .cols{display:grid;grid-template-columns:300px 1fr 300px;gap:22px;align-items:start}
+.ui{background:var(--paper);border-radius:16px;box-shadow:inset 0 0 0 2px var(--line);padding:16px;height:326px;overflow:hidden}
+.ui h4{margin:0 0 12px;font-size:18px}
+.sk{height:44px;border-radius:10px;margin-bottom:10px;background:linear-gradient(90deg,var(--soft) 25%,var(--bg) 50%,var(--soft) 75%);background-size:200% 100%;animation:shimmer 1.1s infinite linear}
+@keyframes shimmer{to{background-position:-200% 0}}
+.item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:var(--soft);margin-bottom:8px;font-weight:700}
+.item span{color:var(--muted);font-weight:600}
+.err{background:var(--danger-soft);color:var(--danger);border-radius:10px;padding:14px;font-weight:700;line-height:1.4}
+.statusline{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.statusline span{font:700 13px var(--mono);padding:6px 10px;border-radius:8px;background:var(--soft);color:var(--muted);transition:.3s}
+.statusline span.on{color:#fff}
+.statusline span.on.idle{background:var(--muted)} .statusline span.on.loading{background:var(--action);color:#231a00}
+.statusline span.on.succeeded{background:var(--ok)} .statusline span.on.failed{background:var(--danger)}
+#s-async .code{font-size:12.5px;line-height:1.5}
+
+/* recap */
+#s-recap .cols{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+.recap{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.recap li{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;font-size:19px;line-height:1.45}
+.recap li i{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:17px}
+.q{background:var(--paper);border-radius:14px;padding:14px 16px;box-shadow:inset 0 0 0 2px var(--line);margin-bottom:12px}
+.q p{margin:0 0 10px;font-weight:800;font-size:17px}
+.q .opts{display:flex;gap:8px;flex-wrap:wrap}
+.q button{font:700 15px var(--sans);border:0;border-radius:8px;padding:8px 12px;background:var(--soft);color:var(--ink);cursor:pointer;transition:.2s}
+.q button.right{background:var(--ok);color:#fff}
+.q button.wrong{background:var(--danger);color:#fff}
+
+@media (prefers-reduced-motion: reduce){
+  .slide{transition:opacity .2s}
+  .slide.active .draw,.rule.on svg .ic{animation:none;stroke-dashoffset:0}
+  .pop,.shake,.popin,.flash{animation:none}
+  .sk{animation:none}
+}
+</style>
+</head>
+<body>
+<div id="wrap"><div id="stage">
+
+<div id="tools"><span id="count">1 / 14</span><button id="notesBtn" title="Speaker notes (N)">Notes</button><button id="themeBtn" title="Switch light/dark">Theme</button></div>
+
+<!-- 1 TITLE -->
+<section class="slide" id="s-title" data-name="Start">
+  <div class="grid">
+    <div>
+      <span class="course">Full Stack Development — about 20 minutes</span>
+      <h1>Redux and client–server communication</h1>
+      <p class="sub">How an app keeps its shared data in one place, and how it talks to a server.</p>
+      <div class="hint"><span><kbd>←</kbd> <kbd>→</kbd> move between slides</span><span><kbd>N</kbd> speaker notes</span><span>Buttons on each slide play the animation</span></div>
+    </div>
+    <svg viewBox="0 0 520 440" width="520" height="440" aria-label="Diagram: a Redux loop connected to a server line">
+      <path id="t-srv" class="trk server draw d2" pathLength="1" d="M200,110 V72 Q200,50 222,50 H448 Q470,50 470,72 V230"/>
+      <path id="t-loop" class="trk redux draw" pathLength="1" d="M200,110 H270 Q330,110 330,170 V290 Q330,350 270,350 H130 Q70,350 70,290 V170 Q70,110 130,110 Z"/>
+      <g class="stn"><circle class="st" cx="200" cy="110" r="14"/><text class="lbl" x="200" y="146" text-anchor="middle">View</text></g>
+      <g class="stn"><circle class="st" cx="330" cy="230" r="14"/><text class="lbl" x="352" y="236">Action</text></g>
+      <g class="stn"><circle class="st" cx="200" cy="350" r="14"/><text class="lbl" x="200" y="390" text-anchor="middle">Reducer</text></g>
+      <g class="stn"><circle class="st" cx="70" cy="230" r="14"/><text class="lbl" x="92" y="236">Store</text></g>
+      <g class="stn"><circle class="st" cx="470" cy="230" r="14"/><text class="lbl" x="470" y="268" text-anchor="middle">Server</text></g>
+      <g id="t-train" class="train"><rect x="-22" y="-13" width="44" height="26" rx="8"/><text x="0" y="4" text-anchor="middle">data</text></g>
+      <g id="t-train2" class="train"><rect x="-20" y="-13" width="40" height="26" rx="8" style="fill:var(--server)"/><text x="0" y="4" text-anchor="middle">req</text></g>
+    </svg>
+  </div>
+</section>
+
+<!-- 2 PROBLEM -->
+<section class="slide" id="s-problem" data-name="Problem">
+  <div class="head">
+    <div><h2>The problem: passing data through every level</h2>
+      <p class="lede">The cart count lives in <code>App</code>. The button and the badge are far apart, so the count travels through components that don't even use it.</p></div>
+    <div style="display:grid;gap:12px;justify-items:end">
+      <button class="btn amber" id="drillBtn">Click “Add to cart”</button>
+      <div class="stat"><strong id="midCount">0</strong> components just passing data along</div>
+    </div>
+  </div>
+  <svg id="tree1" viewBox="0 0 1136 420" width="1136" height="420"></svg>
+</section>
+
+<!-- 3 STORE -->
+<section class="slide" id="s-store" data-name="Store">
+  <div class="head">
+    <div><h2>The fix: keep shared data in one store</h2>
+      <p class="lede">Redux puts shared data in a <b>store</b> outside the component tree. Any component can send an update to it, and any component can read from it.</p></div>
+    <div style="display:grid;gap:12px;justify-items:end">
+      <button class="btn" id="storeBtn">Click “Add to cart”</button>
+      <div class="stat good"><strong id="midCount2">0</strong> components just passing data along</div>
+    </div>
+  </div>
+  <svg id="tree2" viewBox="0 0 1136 420" width="1136" height="420"></svg>
+</section>
+
+<!-- 4 ANALOGY -->
+<section class="slide" id="s-analogy" data-name="Analogy">
+  <div class="head">
+    <div><h2>Think of the college notice board</h2>
+      <p class="lede">Students don't scribble on the board. They give a request slip to the office, the office decides, and the board is updated. Everyone reads the same board.</p></div>
+    <button class="btn" id="nbBtn">Send a request slip</button>
+  </div>
+  <svg id="nb" viewBox="0 0 1136 420" width="1136" height="420">
+    <path class="trk redux" d="M170,170 H370"/>
+    <path class="trk redux" d="M490,170 H630"/>
+    <line class="rline" x1="900" y1="170" x2="1010" y2="90"/><line class="rline" x1="900" y1="170" x2="1030" y2="175"/><line class="rline" x1="900" y1="170" x2="1010" y2="260"/>
+    <text class="em" x="110" y="170">🧑‍🎓</text>
+    <g id="office"><text class="em" x="430" y="170">🏢</text></g>
+    <text id="stamp" x="468" y="120" font-size="36" opacity="0">✅</text>
+    <rect class="board" x="640" y="80" width="260" height="180" rx="10"/>
+    <text x="770" y="118" text-anchor="middle" class="lbl">📌 Notice board</text>
+    <text id="nbText" x="770" y="178" text-anchor="middle" style="font:800 22px var(--sans);fill:var(--ink)">Lab exam: Monday</text>
+    <text id="nbSub" x="770" y="214" text-anchor="middle" class="lbl-s">last updated by the office</text>
+    <g class="reader" id="r0"><text class="em" x="1060" y="90" style="font-size:46px">🧑</text></g>
+    <g class="reader" id="r1"><text class="em" x="1080" y="175" style="font-size:46px">👩</text></g>
+    <g class="reader" id="r2"><text class="em" x="1060" y="260" style="font-size:46px">🧑‍🦱</text></g>
+    <g id="slip" transform="translate(180,120)"><text font-size="40" x="0" y="0">📝</text></g>
+    <text class="lbl" x="110" y="250" text-anchor="middle">Student asks</text><text class="map" x="110" y="278" text-anchor="middle">= Component</text>
+    <text class="lbl" x="270" y="215" text-anchor="middle">Request slip</text><text class="map" x="270" y="243" text-anchor="middle">= Action</text>
+    <text class="lbl" x="430" y="250" text-anchor="middle">Office decides</text><text class="map" x="430" y="278" text-anchor="middle">= Reducer</text>
+    <text class="lbl" x="770" y="300" text-anchor="middle">One board for all</text><text class="map" x="770" y="328" text-anchor="middle">= Store</text>
+    <text class="lbl" x="1060" y="330" text-anchor="middle">Everyone reads</text><text class="map" x="1060" y="358" text-anchor="middle">= Components</text>
+  </svg>
+</section>
+
+<!-- 5 PARTS -->
+<section class="slide" id="s-parts" data-name="4 parts">
+  <div class="head">
+    <div><h2>The 4 parts of Redux</h2>
+      <p class="lede">They always run in this order. Click a station, or use the button to ride the line.</p></div>
+    <button class="btn" id="partNext">Next station</button>
+  </div>
+  <div class="parts" id="parts"><div class="rail"></div><div class="cab" id="cab">you</div></div>
+  <div class="partcard" id="partcard"></div>
+</section>
+
+<!-- 6 LOOP -->
+<section class="slide" id="s-loop" data-name="The loop">
+  <div class="head">
+    <div><h2>One trip around the Redux loop</h2>
+      <p class="lede">Data only moves in one direction. That's what makes Redux apps easy to follow and debug.</p></div>
+    <div class="btns"><button class="btn" id="loopAdd">Add to cart</button><button class="btn ghost" id="loopRem">Remove</button></div>
+  </div>
+  <div class="row" style="gap:34px">
+    <svg id="loopsvg" viewBox="-40 0 790 440" width="640" height="356">
+      <path id="loopPath" class="trk redux" d="M350,70 H540 Q600,70 600,130 V330 Q600,390 540,390 H160 Q100,390 100,330 V130 Q100,70 160,70 Z"/>
+      <g class="stn"><circle class="st" cx="350" cy="70" r="18"/><text class="lbl" x="350" y="40" text-anchor="middle">1 · View</text></g>
+      <g class="stn"><circle class="st" cx="600" cy="230" r="18"/><text class="lbl" x="628" y="236">2 · Action</text></g>
+      <g class="stn"><circle class="st" cx="350" cy="390" r="18"/><text class="lbl" x="350" y="428" text-anchor="middle">3 · Reducer</text></g>
+      <g class="stn"><circle class="st" cx="100" cy="230" r="18"/><text class="lbl" x="92" y="236" text-anchor="end">4 · Store</text></g>
+      <g transform="translate(350,230)">
+        <rect x="-150" y="-60" width="300" height="120" rx="18" style="fill:var(--paper);stroke:var(--line);stroke-width:2"/>
+        <text x="0" y="-16" text-anchor="middle" class="lbl-s">what the user sees</text>
+        <text id="loopView" x="0" y="26" text-anchor="middle" style="font:900 34px var(--sans);fill:var(--ink)">🛒 Cart: 2</text>
+      </g>
+      <g id="loopTrain" class="train" transform="translate(350,70)"><rect x="-40" y="-15" width="80" height="30" rx="9" style="fill:var(--action)"/><text id="loopTrainTxt" x="0" y="5" text-anchor="middle" style="fill:#231a00">click</text></g>
+    </svg>
+    <div style="flex:1;display:grid;gap:14px;align-content:start">
+      <div class="panel"><ul class="steps" id="loopSteps">
+        <li><i>1</i><span>User clicks a button in the <b>View</b>.</span></li>
+        <li><i>2</i><span>An <b>action</b> is dispatched: <code id="lsAct">{ type: "cart/add" }</code></span></li>
+        <li><i>3</i><span>The <b>reducer</b> works out the new state: <code id="lsRed">2 → 3</code></span></li>
+        <li><i>4</i><span>The <b>store</b> saves it and tells every component that reads it.</span></li>
+        <li><i>✓</i><span>The View re-renders with the new value.</span></li>
+      </ul></div>
+      <pre class="json" id="loopState"></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 7 RULES -->
+<section class="slide" id="s-rules" data-name="3 rules">
+  <div class="head">
+    <div><h2>Redux has 3 simple rules</h2><p class="lede">Follow these and your app's data is always predictable.</p></div>
+    <button class="btn" id="ruleNext">Show next rule</button>
+  </div>
+  <div class="rules">
+    <div class="rule"><svg width="90" height="70" viewBox="0 0 90 70"><circle class="ic" pathLength="1" cx="45" cy="35" r="18"/><path class="ic" pathLength="1" d="M27,35 H6 M63,35 H84 M45,17 V4 M45,53 V66"/></svg>
+      <h3>One store for the whole app</h3><p>All shared data lives in a single place. One source of truth.</p>
+      <div class="ex good">✓ store.getState()</div><div class="ex bad">✗ copies of the cart in 5 components</div></div>
+    <div class="rule"><svg width="90" height="70" viewBox="0 0 90 70"><rect class="ic" pathLength="1" x="22" y="30" width="46" height="34" rx="6"/><path class="ic" pathLength="1" d="M32,30 V20 A13,13 0 0 1 58,20 V30"/></svg>
+      <h3>State is read-only</h3><p>Components never change the store directly. They dispatch an action instead.</p>
+      <div class="ex good">✓ dispatch(addItem(7))</div><div class="ex bad">✗ store.cart.count = 5</div></div>
+    <div class="rule"><svg width="90" height="70" viewBox="0 0 90 70"><rect class="ic" pathLength="1" x="28" y="15" width="34" height="40" rx="6"/><path class="ic" pathLength="1" d="M2,35 H24 M66,35 H88 M80,28 L88,35 L80,42"/></svg>
+      <h3>Reducers are pure functions</h3><p>Same state + same action = same result, every time. No side effects.</p>
+      <div class="ex good">✓ return { count: state.count + 1 }</div><div class="ex bad">✗ fetch() or Math.random() inside</div></div>
+  </div>
+</section>
+
+<!-- 8 COUNTER -->
+<section class="slide" id="s-counter" data-name="Example">
+  <div class="head" style="margin-bottom:12px">
+    <div><h2>Example: a counter with Redux Toolkit</h2>
+      <p class="lede" style="max-width:none">Install: <code>npm install @reduxjs/toolkit react-redux</code>. Then press + and watch the code run.</p></div>
+  </div>
+  <div class="cols">
+    <div><div class="tabs" id="ctabs"></div><pre class="code" id="ccode"></pre></div>
+    <div style="display:grid;gap:12px;align-content:start">
+      <div class="panel">
+        <div class="bigcount"><button class="btn ghost" id="cDec" aria-label="Decrease">−</button><div class="num" id="cNum">0</div><button class="btn" id="cInc" aria-label="Increase">+</button></div>
+        <div class="flowline" id="cFlow"><span>click</span><span>dispatch</span><span>reducer</span><span>store</span><span>useSelector</span><span>re-render</span></div>
+      </div>
+      <pre class="json" id="cState"></pre>
+      <div class="panel" style="padding:12px 14px"><div class="small" style="margin-bottom:6px;font-weight:800">Action log</div><ul class="log" id="cLog"><li style="background:var(--soft);color:var(--muted)">no actions yet</li></ul></div>
+      <p class="small" style="margin:0"><code>state.value += 1</code> looks like changing state directly, but Redux Toolkit safely creates a new copy for you.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 9 REAL -->
+<section class="slide" id="s-real" data-name="Real apps">
+  <div class="head" style="margin-bottom:14px">
+    <div><h2>Where you already see this idea</h2>
+      <p class="lede">One piece of shared data, shown in many places at once. Big apps use Redux or tools built on the same idea.</p></div>
+  </div>
+  <div class="cols">
+    <div><div class="scen" id="scen"></div><p class="seen" id="seen"></p></div>
+    <div class="phone"><div class="screen" id="screen"></div></div>
+    <div style="display:grid;gap:12px;align-content:start">
+      <button class="btn amber" id="scenBtn" style="justify-self:start">Try it</button>
+      <div><div class="small" style="font-weight:800;margin-bottom:6px">The store</div><pre class="json" id="scenState"></pre></div>
+      <div><div class="small" style="font-weight:800">Components reading this data</div><ul class="readers" id="readers"></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 RESTAURANT -->
+<section class="slide" id="s-rest" data-name="Client–server">
+  <div class="head">
+    <div><h2>Client–server communication</h2>
+      <p class="lede">Your React app (the client) can't cook the food itself. It sends a request to a server and waits for a response.</p></div>
+    <button class="btn teal" id="restBtn">Order a masala dosa</button>
+  </div>
+  <svg id="rest" viewBox="0 0 1136 360" width="1136" height="360">
+    <path class="trk server" d="M190,150 H620"/><path class="trk grey" d="M780,150 H920"/>
+    <text class="em" x="110" y="150">🙋</text><text class="em" x="700" y="150">👨‍🍳</text><text class="em" x="1000" y="150">🗄️</text>
+    <text id="fire" x="700" y="80" font-size="40" text-anchor="middle" opacity="0">🔥</text>
+    <g id="waiter" transform="translate(240,150)"><text class="em" x="0" y="0" style="font-size:56px">🤵</text><text id="tray" x="26" y="-34" font-size="30"></text></g>
+    <g id="ingr" transform="translate(1000,150)" opacity="0"><text x="0" y="-30" font-size="32" text-anchor="middle">🥔</text></g>
+    <text class="who" x="110" y="232">Customer</text><text class="map" x="110" y="260">= Client (browser / app)</text>
+    <text class="who" x="405" y="232">Waiter</text><text class="map" x="405" y="260">= HTTP request &amp; response</text>
+    <text class="who" x="700" y="232">Kitchen</text><text class="map" x="700" y="260">= Server (runs backend code)</text>
+    <text class="who" x="1000" y="232">Store room</text><text class="map" x="1000" y="260">= Database</text>
+  </svg>
+  <div class="caption" id="restCap">The client never walks into the kitchen. The waiter carries messages both ways.</div>
+</section>
+
+<!-- 11 REQUEST RESPONSE -->
+<section class="slide" id="s-rr" data-name="Request">
+  <div class="head" style="margin-bottom:6px">
+    <div><h2>Request and response</h2><p class="lede">Every message has a method and a URL going out, and a status code and data coming back.</p></div>
+    <label class="chk"><input type="checkbox" id="bugChk"> Server has a bug</label>
+  </div>
+  <div class="btns" id="rrBtns" style="margin-bottom:6px"></div>
+  <svg id="rr" viewBox="0 0 1136 200" width="1136" height="200">
+    <rect class="box" x="10" y="20" width="200" height="160" rx="14"/>
+    <text x="110" y="92" text-anchor="middle" font-size="42">💻</text><text x="110" y="145" text-anchor="middle" class="lbl">Client (React)</text>
+    <rect class="box" x="926" y="20" width="200" height="160" rx="14"/>
+    <text x="1026" y="92" text-anchor="middle" font-size="42">🖥️</text><text x="1026" y="145" text-anchor="middle" class="lbl">Server (API)</text>
+    <path class="trk server" d="M225,65 H905"/><path d="M905,52 L922,65 L905,78" style="fill:var(--server)"/>
+    <text x="565" y="40" text-anchor="middle" class="lbl-s">request →</text>
+    <path class="trk grey" d="M911,135 H231" id="resLane"/><path d="M231,122 L214,135 L231,148" style="fill:var(--line)"/>
+    <text x="565" y="178" text-anchor="middle" class="lbl-s">← response</text>
+    <g id="spin" transform="translate(1026,40)" opacity="0"><circle r="10" fill="none" stroke="var(--action)" stroke-width="4" stroke-dasharray="40 30"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur=".8s" repeatCount="indefinite"/></circle></g>
+    <g id="reqEnv" class="env" opacity="0"><rect x="-54" y="-17" width="108" height="34" rx="8"/><text id="reqEnvT">GET</text></g>
+    <g id="resEnv" class="env" opacity="0"><rect x="-54" y="-17" width="108" height="34" rx="8"/><text id="resEnvT">200</text></g>
+  </svg>
+  <div class="rrcards">
+    <div class="rrcard"><h4>Request (what the client sends)</h4><pre id="reqCard">Pick a request above.</pre></div>
+    <div class="rrcard"><h4>Response (what the server sends back)</h4><pre id="resCard">…</pre></div>
+  </div>
+  <div class="legend" style="margin-top:12px">Status codes:
+    <span style="background:var(--ok)">200 OK</span><span style="background:var(--ok)">201 Created</span><span style="background:var(--action);color:#231a00">404 Not Found</span><span style="background:var(--danger)">500 Server Error</span></div>
+</section>
+
+<!-- 12 METHODS -->
+<section class="slide" id="s-methods" data-name="Methods">
+  <div class="head"><div><h2>4 HTTP methods = 4 things you do with data</h2>
+    <p class="lede">Almost every app is just these four operations, often called CRUD. Click one to see it in code.</p></div></div>
+  <div class="methods" id="methods"></div>
+  <pre class="code" id="mcode" style="font-size:16px"></pre>
+</section>
+
+<!-- 13 ASYNC -->
+<section class="slide" id="s-async" data-name="Redux + server">
+  <div class="head" style="margin-bottom:8px">
+    <div><h2>Putting it together: Redux + server</h2>
+      <p class="lede" style="max-width:none">Loading takes time, so the store also tracks a <b>status</b>: loading, succeeded or failed.</p></div>
+    <div style="display:grid;gap:10px;justify-items:end">
+      <button class="btn" id="asyncBtn">Load products</button>
+      <label class="chk"><input type="checkbox" id="failChk"> Make the server fail</label>
+    </div>
+  </div>
+  <svg class="lane" viewBox="0 0 1136 74" width="1136" height="62">
+    <path class="trk server" d="M150,26 H990"/><path class="trk grey" d="M990,54 H150" style="stroke-width:6"/>
+    <text x="70" y="44" text-anchor="middle" font-size="34">📱</text><text x="1066" y="44" text-anchor="middle" font-size="34">🖥️</text>
+    <g id="aReq" class="env" opacity="0"><rect x="-70" y="-13" width="140" height="26" rx="7" style="fill:var(--server)"/><text x="0" y="4" text-anchor="middle" style="fill:#fff;font:800 12px var(--mono)">GET /api/products</text></g>
+    <g id="aRes" class="env" opacity="0"><rect x="-40" y="-13" width="80" height="26" rx="7" id="aResR" style="fill:var(--ok)"/><text id="aResT" x="0" y="4" text-anchor="middle" style="fill:#fff;font:800 12px var(--mono)">200</text></g>
+  </svg>
+  <div class="cols">
+    <div class="ui" id="aUI"></div>
+    <pre class="code" id="acode"></pre>
+    <div style="display:grid;gap:10px;align-content:start">
+      <div class="statusline"><span class="idle on" data-s="idle">idle</span><span class="loading" data-s="loading">loading</span></div>
+      <div class="statusline" style="margin-top:-6px"><span class="succeeded" data-s="succeeded">succeeded</span><span class="failed" data-s="failed">failed</span></div>
+      <pre class="json" id="aState"></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 14 RECAP -->
+<section class="slide" id="s-recap" data-name="Recap">
+  <h2>Recap and a quick check</h2>
+  <div class="cols" style="margin-top:18px">
+    <ul class="recap">
+      <li><i style="background:var(--redux-soft)">🏪</i><span><b>Store</b>: one place for shared app data.</span></li>
+      <li><i style="background:var(--action-soft)">📝</i><span><b>Action</b>: an object saying what happened. Sent with <code>dispatch</code>.</span></li>
+      <li><i style="background:var(--redux-soft)">⚙️</i><span><b>Reducer</b>: old state + action → new state. Pure, no side effects.</span></li>
+      <li><i style="background:var(--ok-soft)">👀</i><span><code>useSelector</code> reads from the store, <code>useDispatch</code> sends actions.</span></li>
+      <li><i style="background:var(--server-soft)">🌐</i><span><b>Client</b> sends a request (GET, POST, PUT, DELETE), <b>server</b> sends a response with a status code.</span></li>
+      <li><i style="background:var(--action-soft)">⏳</i><span>Store the request <b>status</b> so the UI can show loading and errors.</span></li>
+    </ul>
+    <div id="quiz"></div>
+  </div>
+</section>
+
+<div id="notes" role="note"></div>
+<nav id="metro" aria-label="Slides"></nav>
+</div></div>
+
+<script>
+(() => {
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const NS = 'http://www.w3.org/2000/svg';
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sleep = ms => new Promise(r => setTimeout(r, RM ? Math.min(ms, 150) : ms));
+const ease = p => p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+function tween(ms, fn) {
+  return new Promise(res => {
+    if (RM) { fn(1); res(); return; }
+    const t0 = performance.now();
+    (function step(t) { const p = Math.min(1, (t - t0) / ms); fn(ease(p)); p < 1 ? requestAnimationFrame(step) : res(); })(t0);
+  });
+}
+const at = (el, x, y) => el.setAttribute('transform', `translate(${x},${y})`);
+async function travel(el, pts, ms) {
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [a, b] = [pts[i], pts[i + 1]];
+    const d = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (!d) continue;
+    await tween(Math.max(120, ms * d / 200), p => at(el, a[0] + (b[0] - a[0]) * p, a[1] + (b[1] - a[1]) * p));
+  }
+}
+async function along(el, path, ms, from, to) {
+  const L = path.getTotalLength();
+  await tween(ms, p => { const pt = path.getPointAtLength(L * (from + (to - from) * p)); at(el, pt.x, pt.y); });
+}
+function svgEl(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function pop(el) { el.classList.remove('pop'); void el.getBoundingClientRect(); el.classList.add('pop'); }
+function cls(el, c) { el.classList.remove(c); void el.getBoundingClientRect(); el.classList.add(c); }
+const busy = {};
+const once = (k, fn) => async (...a) => { if (busy[k]) return; busy[k] = 1; try { await fn(...a); } finally { busy[k] = 0; } };
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function hl(src) {
+  const re = /(\/\/.*$|\{\/\*.*?\*\/\})|("[^"]*"|'[^']*'|`[^`]*`)|\b(import|from|export|default|const|let|function|return|if|async|await|new)\b|\b(\d+)\b|(<\/?[A-Za-z][\w.]*|\/>)/g;
+  let out = '', last = 0, m;
+  while ((m = re.exec(src))) {
+    out += esc(src.slice(last, m.index));
+    const c = m[1] ? 'c' : m[2] ? 's' : m[3] ? 'k' : m[4] ? 'n' : 't';
+    out += `<span class="${c}">${esc(m[0])}</span>`;
+    last = re.lastIndex;
+  }
+  return out + esc(src.slice(last));
+}
+function renderCode(el, text) { el.innerHTML = text.split('\n').map((l, i) => `<span class="ln" data-i="${i}">${hl(l) || ' '}</span>`).join(''); }
+function markLine(el, idx) { $$('.ln', el).forEach(l => l.classList.toggle('hl', idx.includes(+l.dataset.i))); }
+function json(obj, changed) {
+  let s = JSON.stringify(obj, null, 2);
+  s = esc(s);
+  (changed || []).forEach(k => { s = s.replace(new RegExp(`("${k}": )([^,\\n]+)`), '$1<span class="chg">$2</span>'); });
+  return s;
+}
+
+function jline(obj, changed) {
+  let s = esc(JSON.stringify(obj).replace(/([{,:])/g, '$1 ').replace(/}/g, ' }'));
+  (changed || []).forEach(k => { s = s.replace(new RegExp(`("${k}": )([^,}]+)`), '$1<span class="chg">$2</span>'); });
+  return s;
+}
+/* ---------- stage scaling ---------- */
+const wrap = $('#wrap'), stage = $('#stage');
+function fit() { stage.style.setProperty('--s', Math.min(wrap.clientWidth / 1280, wrap.clientHeight / 720)); }
+addEventListener('resize', fit); fit();
+
+/* ---------- theme ---------- */
+const root = document.documentElement;
+try { const t = localStorage.getItem('rx-theme'); if (t) root.dataset.theme = t; } catch (e) {}
+$('#themeBtn').onclick = () => {
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+  try { localStorage.setItem('rx-theme', root.dataset.theme); } catch (e) {}
+};
+
+/* ---------- navigation ---------- */
+const slides = $$('.slide');
+const NOTES = [
+  "<b>~1 min.</b> Two ideas today. First, Redux: keeping shared data in one place. Second, how the app talks to a server. At the end we connect them.",
+  "<b>~2 min.</b> Click the button. The count starts in App and has to travel through Page, ProductList, ProductCard, back up and down through Navbar. Those components don't need it. This is called <b>prop drilling</b>. Imagine 200 components.",
+  "<b>~1.5 min.</b> Same app, but the count lives in a store. The button sends an update straight to the store; the badge reads straight from it. Zero middlemen.",
+  "<b>~1.5 min.</b> Map each part: student = component, slip = action, office = reducer (the only one allowed to write), notice board = store, everyone reading = subscribed components.",
+  "<b>~2 min.</b> Walk through each station. Stress: an action is just a plain object with a <b>type</b>. Reducer takes old state + action and returns new state.",
+  "<b>~2 min.</b> Click Add a few times. Point at each station as the train stops. Data flows one way only: View → Action → Reducer → Store → View.",
+  "<b>~1 min.</b> Reveal one rule at a time. Rule 3 matters later: API calls do NOT go inside reducers.",
+  "<b>~3 min.</b> Show each tab first (slice, store, main, component). Then press + slowly and follow the highlighted lines. Point out the action log — this is what Redux DevTools shows.",
+  "<b>~2 min.</b> Go through all four scenarios. Ask students: where else have you seen one change appear in many places at once?",
+  "<b>~1.5 min.</b> Restaurant analogy. The customer never enters the kitchen; the waiter carries the order (request) and the food (response). Kitchen = server, store room = database.",
+  "<b>~2 min.</b> Try GET, POST, DELETE, then the typo URL for 404. Tick 'Server has a bug' to show 500. 2xx = success, 4xx = your mistake, 5xx = server's mistake.",
+  "<b>~1 min.</b> CRUD. Relate to Instagram: view feed = GET, upload = POST, edit caption = PUT, delete post = DELETE.",
+  "<b>~2 min.</b> Press Load: status goes loading, request travels, data returns, status succeeded. Then tick 'Make the server fail' and load again to show the failed path. createAsyncThunk dispatches pending/fulfilled/rejected for you.",
+  "<b>~1.5 min.</b> Read the recap, then ask the class the quiz questions before clicking answers."
+];
+const metro = $('#metro');
+metro.innerHTML = `<button class="nav prev" aria-label="Previous slide">‹</button><div class="rail"><i></i></div><span class="name"></span><button class="nav next" aria-label="Next slide">›</button>`;
+const railI = $('.rail i', metro), nameEl = $('.name', metro);
+const stopPos = i => 44 + (1136 - 88) * i / (slides.length - 1);
+slides.forEach((s, i) => {
+  const b = document.createElement('button');
+  b.className = 'stop'; b.style.left = stopPos(i) + 'px';
+  b.setAttribute('aria-label', `Slide ${i + 1}: ${s.dataset.name}`);
+  b.onclick = () => show(i);
+  metro.appendChild(b);
+});
+const stops = $$('.stop', metro);
+let cur = -1;
+const enter = {};
+function show(n) {
+  n = Math.max(0, Math.min(slides.length - 1, n));
+  if (n === cur) return;
+  cur = n;
+  slides.forEach((s, i) => { s.classList.toggle('active', i === n); s.classList.toggle('past', i < n); s.inert = i !== n; s.setAttribute('aria-hidden', i !== n); });
+  stops.forEach((b, i) => { b.classList.toggle('cur', i === n); b.classList.toggle('done', i < n); });
+  railI.style.width = (stopPos(n) - 44) + 'px';
+  nameEl.style.left = stopPos(n) + 'px'; nameEl.textContent = slides[n].dataset.name;
+  $('#count').textContent = `${n + 1} / ${slides.length}`;
+  $('#notes').innerHTML = NOTES[n] || '';
+  try { history.replaceState(null, '', '#' + (n + 1)); } catch (e) {}
+  (enter[slides[n].id] || (() => {}))();
+}
+$('.prev', metro).onclick = () => show(cur - 1);
+$('.next', metro).onclick = () => show(cur + 1);
+$('#notesBtn').onclick = () => $('#notes').classList.toggle('show');
+addEventListener('keydown', e => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (['ArrowRight', 'PageDown'].includes(e.key)) { show(cur + 1); e.preventDefault(); }
+  else if (['ArrowLeft', 'PageUp'].includes(e.key)) { show(cur - 1); e.preventDefault(); }
+  else if (e.key === ' ' && !['button', 'input'].includes(tag)) { show(cur + 1); e.preventDefault(); }
+  else if (e.key === 'Home') show(0);
+  else if (e.key === 'End') show(slides.length - 1);
+  else if (e.key.toLowerCase() === 'n' && tag !== 'input') $('#notes').classList.toggle('show');
+});
+let sx = null;
+wrap.addEventListener('pointerdown', e => { sx = e.target.closest('button,input,label,.song') ? null : e.clientX; });
+wrap.addEventListener('pointerup', e => { if (sx === null) return; const dx = e.clientX - sx; if (Math.abs(dx) > 70) show(cur + (dx < 0 ? 1 : -1)); sx = null; });
+
+/* ---------- 1 title ---------- */
+let titleRun = false;
+enter['s-title'] = () => {
+  const p1 = $('#t-loop'), p2 = $('#t-srv'), t1 = $('#t-train'), t2 = $('#t-train2');
+  if (RM) { const a = p1.getPointAtLength(0); at(t1, a.x, a.y); const b = p2.getPointAtLength(p2.getTotalLength()); at(t2, b.x, b.y); return; }
+  if (titleRun) return; titleRun = true;
+  const L1 = p1.getTotalLength(), L2 = p2.getTotalLength(), t0 = performance.now();
+  (function f(t) {
+    if (slides[cur].id !== 's-title') { titleRun = false; return; }
+    const k = Math.max(0, t - t0 - 1400);
+    const a = p1.getPointAtLength(((k / 7000) % 1) * L1); at(t1, a.x, a.y);
+    const q = (k / 2600) % 2; const b = p2.getPointAtLength(ease(q < 1 ? q : 2 - q) * L2); at(t2, b.x, b.y);
+    requestAnimationFrame(f);
+  })(t0);
+};
+
+/* ---------- 2 & 3 trees ---------- */
+const T = { App: [568, 40], Navbar: [300, 140], CartBadge: [300, 230], Page: [836, 140], ProductList: [836, 220], ProductCard: [836, 300], AddButton: [836, 380] };
+const EDGES = [['App', 'Navbar'], ['Navbar', 'CartBadge'], ['App', 'Page'], ['Page', 'ProductList'], ['ProductList', 'ProductCard'], ['ProductCard', 'AddButton']];
+const legPts = (a, b) => { const [xa, ya] = T[a], [xb, yb] = T[b]; const my = (ya + yb) / 2; return xa === xb ? [[xa, ya], [xb, yb]] : [[xa, ya], [xa, my], [xb, my], [xb, yb]]; };
+function buildTree(svg, withStore) {
+  svg.innerHTML = '';
+  EDGES.forEach(([a, b]) => { const p = legPts(a, b); svgEl('path', { class: 'edge', d: 'M' + p.map(q => q.join(',')).join(' L') }, svg); });
+  const nodes = {};
+  if (withStore) {
+    svgEl('path', { class: 'dash', d: 'M758,380 H700 V300 H655' }, svg);
+    svgEl('path', { class: 'dash', d: 'M481,300 H420 V230 H378' }, svg);
+    svgEl('text', { x: 700, y: 400, class: 'lbl-s', 'text-anchor': 'middle' }, svg).textContent = 'dispatch';
+    svgEl('text', { x: 420, y: 330, class: 'lbl-s', 'text-anchor': 'middle' }, svg).textContent = 'useSelector';
+  }
+  for (const [name, [x, y]] of Object.entries(T)) {
+    const g = svgEl('g', { class: 'node' + (name === 'AddButton' ? ' btnnode' : ''), transform: `translate(${x},${y})` }, svg);
+    svgEl('rect', { x: -78, y: -23, width: 156, height: 46, rx: 10 }, g);
+    svgEl('text', { x: 0, y: 5, 'text-anchor': 'middle' }, g).textContent = `<${name}>`;
+    if (name === 'App' && !withStore) svgEl('text', { class: 'tag', x: 92, y: 5 }, g).textContent = 'cartCount lives here';
+    if (name === 'CartBadge') {
+      const bg = svgEl('g', { transform: 'translate(78,-23)' }, g);
+      svgEl('circle', { class: 'badge-c', r: 15 }, bg);
+      const t = svgEl('text', { class: 'badge-t', y: 5, 'text-anchor': 'middle' }, bg); t.textContent = '0';
+      nodes.badge = t; nodes.badgeG = bg;
+      bg.style.transformBox = 'fill-box'; bg.style.transformOrigin = 'center';
+    }
+    nodes[name] = g;
+  }
+  if (withStore) {
+    const g = svgEl('g', { class: 'storenode', transform: 'translate(568,300)' }, svg);
+    svgEl('rect', { x: -87, y: -32, width: 174, height: 64, rx: 14 }, g);
+    const t = svgEl('text', { x: 0, y: -4, 'text-anchor': 'middle' }, g); t.textContent = 'Store';
+    const t2 = svgEl('text', { x: 0, y: 18, 'text-anchor': 'middle', style: 'font-size:14px;font-weight:600' }, g); t2.textContent = '{ cartCount: 0 }';
+    nodes.store = g; nodes.storeT = t2; g.style.transformBox = 'fill-box'; g.style.transformOrigin = 'center';
+  }
+  const dot = svgEl('g', { class: 'train', opacity: 0 }, svg);
+  svgEl('circle', { r: 13, style: 'fill:var(--action);stroke:var(--ink);stroke-width:3' }, dot);
+  nodes.dot = dot;
+  return nodes;
+}
+const n1 = buildTree($('#tree1'), false), n2 = buildTree($('#tree2'), true);
+let c1 = 0, c2 = 0;
+$('#drillBtn').onclick = once('drill', async () => {
+  Object.keys(T).forEach(k => n1[k].classList.remove('mid', 'hit'));
+  $('#midCount').textContent = '0';
+  const route = ['AddButton', 'ProductCard', 'ProductList', 'Page', 'App', 'Navbar', 'CartBadge'];
+  n1.dot.setAttribute('opacity', 1); at(n1.dot, ...T.AddButton);
+  let mids = 0;
+  for (let i = 0; i < route.length - 1; i++) {
+    await travel(n1.dot, legPts(route[i], route[i + 1]), 330);
+    const nx = route[i + 1];
+    if (nx === 'CartBadge') { n1[nx].classList.add('hit'); c1++; n1.badge.textContent = c1; pop(n1.badgeG); }
+    else { n1[nx].classList.add('mid'); mids++; $('#midCount').textContent = mids; pop($('#midCount')); }
+    await sleep(120);
+  }
+  await sleep(300); n1.dot.setAttribute('opacity', 0);
+});
+$('#storeBtn').onclick = once('store', async () => {
+  Object.keys(T).forEach(k => n2[k].classList.remove('hit'));
+  n2.dot.setAttribute('opacity', 1); at(n2.dot, ...T.AddButton);
+  await travel(n2.dot, [[836, 380], [700, 380], [700, 300], [568, 300]], 260);
+  c2++; n2.storeT.textContent = `{ cartCount: ${c2} }`; pop(n2.store);
+  await sleep(350);
+  await travel(n2.dot, [[568, 300], [420, 300], [420, 230], [300, 230]], 260);
+  n2.CartBadge.classList.add('hit'); n2.badge.textContent = c2; pop(n2.badgeG);
+  pop($('#midCount2'));
+  await sleep(300); n2.dot.setAttribute('opacity', 0);
+});
+
+/* ---------- 4 analogy ---------- */
+const NOTICES = ['Lab exam: Monday', 'Lab exam: Friday', 'Holiday: Saturday', 'Fest: next week'];
+let nbi = 0;
+$('#nbBtn').onclick = once('nb', async () => {
+  const slip = $('#slip'); slip.setAttribute('opacity', 1);
+  await travel(slip, [[180, 120], [390, 120]], 420);
+  const off = $('#office'); off.style.transformBox = 'fill-box'; off.style.transformOrigin = 'center'; cls(off, 'shake');
+  slip.setAttribute('opacity', 0);
+  await sleep(350);
+  const st = $('#stamp'); st.setAttribute('opacity', 1); await sleep(400); st.setAttribute('opacity', 0);
+  slip.setAttribute('opacity', 1); at(slip, 480, 120);
+  await travel(slip, [[480, 120], [640, 120]], 330);
+  slip.setAttribute('opacity', 0);
+  nbi = (nbi + 1) % NOTICES.length;
+  const t = $('#nbText'); t.textContent = NOTICES[nbi]; t.style.transformBox = 'fill-box'; t.style.transformOrigin = 'center'; pop(t);
+  $('#nbSub').textContent = 'updated just now';
+  const lines = $$('#nb .rline');
+  for (let i = 0; i < 3; i++) { lines[i].classList.add('on'); const r = $('#r' + i); r.style.transformBox = 'fill-box'; r.style.transformOrigin = 'center'; pop(r); await sleep(200); }
+  await sleep(900); lines.forEach(l => l.classList.remove('on'));
+  at(slip, 180, 120); slip.setAttribute('opacity', 1);
+});
+
+/* ---------- 5 parts ---------- */
+const PARTS = [
+  { n: 'Action', d: 'A plain JavaScript object that describes <b>what happened</b>. It must have a <code>type</code>.', code: '{ type: "cart/addItem", payload: { id: 7 } }', eg: 'Like the request slip: it describes the change, it doesn\'t make it.' },
+  { n: 'Dispatch', d: 'The function you call to <b>send</b> an action to the store.', code: 'dispatch({ type: "cart/addItem", payload: { id: 7 } })', eg: 'Like handing the slip to the office.' },
+  { n: 'Reducer', d: 'A function that takes the <b>old state + action</b> and returns the <b>new state</b>.', code: 'function cartReducer(state = { count: 0 }, action) {\n  if (action.type === "cart/addItem") {\n    return { count: state.count + 1 };\n  }\n  return state;\n}', eg: 'The office: the only place allowed to decide the new value.' },
+  { n: 'Store', d: 'The single object that <b>holds</b> the whole app\'s shared state.', code: 'const store = configureStore({\n  reducer: { cart: cartReducer },\n});\n\nstore.getState(); // { cart: { count: 1 } }', eg: 'The notice board everyone reads.' },
+];
+const partsEl = $('#parts'); let pi = 0;
+const partX = i => 60 + (1136 - 120) * i / 3;
+PARTS.forEach((p, i) => { const b = document.createElement('button'); b.className = 'p'; b.style.left = partX(i) + 'px'; b.innerHTML = `<span></span>${i + 1}. ${p.n}`; b.onclick = () => setPart(i); partsEl.appendChild(b); });
+function setPart(i) {
+  pi = i; const p = PARTS[i];
+  $$('.p', partsEl).forEach((b, k) => b.classList.toggle('on', k === i));
+  $('#cab').style.left = partX(i) + 'px'; $('#cab').textContent = 'you are here';
+  const card = $('#partcard');
+  card.innerHTML = `<div><h3>${p.n}</h3><p>${p.d}</p><p class="eg">${p.eg}</p></div><pre class="code" style="font-size:16px"></pre>`;
+  renderCode($('pre', card), p.code); cls(card, 'popin');
+}
+$('#partNext').onclick = () => setPart((pi + 1) % 4);
+setPart(0);
+
+/* ---------- 6 loop ---------- */
+const lp = $('#loopPath'), lt = $('#loopTrain');
+let cartN = 2; const LLEN = lp.getTotalLength();
+const STN = [0, 384.25, 768.5, 1152.75, LLEN].map(v => v / LLEN);
+$('#loopState').innerHTML = jline({ cart: { count: cartN } });
+function loopStep(i) { $$('#loopSteps li').forEach((li, k) => li.classList.toggle('on', k === i)); }
+const runLoop = delta => once('loop', async () => {
+  const type = delta > 0 ? 'cart/add' : 'cart/remove';
+  if (delta < 0 && cartN === 0) { cls($('#loopRem'), 'shake'); return; }
+  $('#lsAct').textContent = `{ type: "${type}" }`; $('#lsRed').textContent = `${cartN} → ${cartN + delta}`;
+  const txt = $('#loopTrainTxt');
+  loopStep(0); txt.textContent = 'click'; await sleep(600);
+  await along(lt, lp, 1100, STN[0], STN[1]); loopStep(1); txt.textContent = delta > 0 ? 'add' : 'remove'; await sleep(900);
+  await along(lt, lp, 1100, STN[1], STN[2]); loopStep(2); txt.textContent = `${cartN}→${cartN + delta}`; await sleep(900);
+  await along(lt, lp, 1100, STN[2], STN[3]); loopStep(3); cartN += delta; txt.textContent = 'saved';
+  $('#loopState').innerHTML = jline({ cart: { count: cartN } }, ['count']); await sleep(900);
+  await along(lt, lp, 1100, STN[3], STN[4]); loopStep(4);
+  const v = $('#loopView'); v.textContent = `🛒 Cart: ${cartN}`; v.style.transformBox = 'fill-box'; v.style.transformOrigin = 'center'; pop(v);
+  txt.textContent = 'click';
+})();
+$('#loopAdd').onclick = () => runLoop(1);
+$('#loopRem').onclick = () => runLoop(-1);
+
+/* ---------- 7 rules ---------- */
+let ri = 0;
+$('#ruleNext').onclick = () => { const r = $$('.rule'); if (ri < r.length) { r[ri].classList.add('on'); ri++; } if (ri >= r.length) $('#ruleNext').textContent = 'All 3 shown'; };
+
+/* ---------- 8 counter ---------- */
+const FILES = {
+  'counterSlice.js': `import { createSlice } from "@reduxjs/toolkit";
+
+const counterSlice = createSlice({
+  name: "counter",
+  initialState: { value: 0 },
+  reducers: {
+    increment: (state) => { state.value += 1; },
+    decrement: (state) => { state.value -= 1; },
+  },
+});
+
+export const { increment, decrement } = counterSlice.actions;
+export default counterSlice.reducer;`,
+  'store.js': `import { configureStore } from "@reduxjs/toolkit";
+import counterReducer from "./counterSlice";
+
+export const store = configureStore({
+  reducer: { counter: counterReducer },
+});`,
+  'main.jsx': `import { createRoot } from "react-dom/client";
+import { Provider } from "react-redux";
+import { store } from "./store";
+import Counter from "./Counter";
+
+// Provider gives every component access to the store
+createRoot(document.getElementById("root")).render(
+  <Provider store={store}>
+    <Counter />
+  </Provider>
+);`,
+  'Counter.jsx': `import { useSelector, useDispatch } from "react-redux";
+import { increment, decrement } from "./counterSlice";
+
+function Counter() {
+  const count = useSelector((state) => state.counter.value);
+  const dispatch = useDispatch();
+
+  return (
+    <div>
+      <h1>{count}</h1>
+      <button onClick={() => dispatch(increment())}>+</button>
+      <button onClick={() => dispatch(decrement())}>-</button>
+    </div>
+  );
+}
+
+export default Counter;`
+};
+const ctabs = $('#ctabs'), ccode = $('#ccode');
+let ctab = 'counterSlice.js';
+Object.keys(FILES).forEach(f => { const b = document.createElement('button'); b.textContent = f; b.onclick = () => openTab(f); ctabs.appendChild(b); });
+function openTab(f, lines = []) { ctab = f; $$('button', ctabs).forEach(b => b.classList.toggle('on', b.textContent === f)); renderCode(ccode, FILES[f]); markLine(ccode, lines); }
+openTab('Counter.jsx');
+let cval = 0; const clog = [];
+$('#cState').innerHTML = jline({ counter: { value: 0 } });
+const flow = i => $$('#cFlow span').forEach((s, k) => s.classList.toggle('on', k === i));
+const counterGo = d => once('counter', async () => {
+  flow(0); openTab('Counter.jsx', [d > 0 ? 10 : 11]); await sleep(750);
+  flow(1);
+  if (clog.length === 0) $('#cLog').innerHTML = '';
+  clog.unshift(`{ type: "counter/${d > 0 ? 'increment' : 'decrement'}" }`);
+  $('#cLog').innerHTML = clog.slice(0, 4).map((l, i) => `<li${i === 0 ? ' class="popin"' : ''}>${l}</li>`).join('');
+  await sleep(750);
+  flow(2); openTab('counterSlice.js', [d > 0 ? 6 : 7]); await sleep(900);
+  flow(3); cval += d; $('#cState').innerHTML = jline({ counter: { value: cval } }, ['value']); await sleep(750);
+  flow(4); openTab('Counter.jsx', [4]); await sleep(750);
+  flow(5); markLine(ccode, [9]); $('#cNum').textContent = cval; pop($('#cNum')); await sleep(600);
+})();
+$('#cInc').onclick = () => counterGo(1);
+$('#cDec').onclick = () => counterGo(-1);
+
+/* ---------- 9 real apps ---------- */
+const S = { cart: 0, dark: false, unread: 2, song: 0, playing: false };
+const SONGS = ['Monsoon Drive', 'Hostel Nights', 'Exam Eve Lo-fi'];
+const SCEN = {
+  cart: { icon: '🛒', name: 'Shopping cart', seen: 'Same idea in shopping apps like Flipkart and Amazon: add an item on one screen, and the count updates everywhere.', btn: 'Tap “Add to cart”',
+    readers: ['Header cart icon', 'Cart tab badge', 'Checkout total'], state: () => ({ cart: { count: S.cart, total: S.cart * 1499 } }), key: ['count', 'total'],
+    act() { S.cart++; },
+    view: () => `<div class="sbar"><span>9:41</span><span>●●● 5G</span></div>
+      <div class="ph-top"><span>ShopKart</span><span class="rel" data-r="0">🛒<i class="bdg ${S.cart ? '' : 'zero'}">${S.cart}</i></span></div>
+      <div class="ph-body"><div class="prod"><div class="img">🎧</div><div><b>Wireless earbuds</b><div style="opacity:.65">₹1,499</div></div></div>
+      <button class="phbtn" data-act>Add to cart</button>
+      <div class="rowi" data-r="2" style="display:inline-flex;gap:8px;border:0"><span>Cart total:</span><b>₹${(S.cart * 1499).toLocaleString('en-IN')}</b></div></div>
+      <div class="ph-tabs"><span>🏠<br>Home</span><span class="rel" data-r="1">🛍️<br>Cart<i class="bdg ${S.cart ? '' : 'zero'}">${S.cart}</i></span><span>👤<br>Account</span></div>` },
+  theme: { icon: '🌙', name: 'Dark mode', seen: 'Same idea in YouTube, Instagram and most apps: one setting changes every screen at once.', btn: 'Flip the dark mode switch',
+    readers: ['Every screen', 'Navigation bar', 'Settings toggle'], state: () => ({ settings: { darkMode: S.dark } }), key: ['darkMode'],
+    act() { S.dark = !S.dark; },
+    view: () => `<div class="sbar"><span>9:41</span><span>●●● 5G</span></div>
+      <div class="ph-top" data-r="0"><span>Settings</span><span>⚙️</span></div>
+      <div class="ph-body"><div class="rowi"><span>🌙 Dark mode</span><button class="toggle ${S.dark ? 'on' : ''}" data-act data-r="2" aria-label="Dark mode"></button></div>
+      <div class="rowi"><span>🔔 Notifications</span><span style="opacity:.6">On</span></div><div class="rowi"><span>🌐 Language</span><span style="opacity:.6">English</span></div>
+      <div class="rowi"><span>🔒 Privacy</span><span style="opacity:.6">›</span></div></div>
+      <div class="ph-tabs" data-r="1"><span>🏠<br>Home</span><span>🔍<br>Search</span><span>⚙️<br>Settings</span></div>` },
+  chat: { icon: '💬', name: 'Unread messages', seen: 'Same idea in WhatsApp and Telegram: one new message updates the chat list, the tab badge and the app icon.', btn: 'Receive a new message',
+    readers: ['Chat list', 'Chats tab badge', 'App icon badge'], state: () => ({ chats: { unread: S.unread } }), key: ['unread'],
+    act() { S.unread++; },
+    view: () => `<div class="sbar"><span>9:41</span><span>●●● 5G</span></div>
+      <div class="ph-top"><span>Chats</span><span class="rel" data-r="2">📱<i class="bdg">${S.unread}</i></span></div>
+      <div class="ph-body" data-r="0" style="gap:0">${S.unread > 2 ? Array.from({ length: Math.min(S.unread - 2, 2) }, (_, i) => `<div class="chat unread ${i === 0 ? 'popin' : ''}"><div class="av">👥</div><div><b>Project team</b><small>${['Meet at 4 pm in the lab', 'Did anyone push the code?'][i % 2]}</small></div><span class="dot">1</span></div>`).join('') : ''}
+        <div class="chat unread"><div class="av">👩</div><div><b>Mom</b><small>Did you eat?</small></div><span class="dot">1</span></div>
+        <div class="chat unread"><div class="av">🎓</div><div><b>Class group</b><small>Record submission tomorrow</small></div><span class="dot">1</span></div>
+        <div class="chat"><div class="av">🧑</div><div>Rahul<small>ok bro</small></div><span></span></div></div>
+      <div class="ph-tabs"><span class="rel" data-r="1">💬<br>Chats<i class="bdg">${S.unread}</i></span><span>📞<br>Calls</span><span>⚙️<br>Settings</span></div>` },
+  music: { icon: '🎵', name: 'Music player', seen: 'Same idea in Spotify and JioSaavn: pick a song and the list, the mini player and the notification all update.', btn: 'Play the next song',
+    readers: ['Song list', 'Mini player', 'Lock-screen notification'], state: () => ({ player: { song: SONGS[S.song], isPlaying: S.playing } }), key: ['song', 'isPlaying'],
+    act() { if (S.playing) S.song = (S.song + 1) % 3; S.playing = true; },
+    view: () => `<div class="sbar"><span>9:41</span><span>●●● 5G</span></div>
+      <div class="ph-top"><span>Library</span><span>🎧</span></div>
+      <div class="ph-body" data-r="0" style="gap:4px">${SONGS.map((s, i) => `<div class="song ${S.playing && i === S.song ? 'on' : ''}" data-song="${i}"><span>${S.playing && i === S.song ? '🔊' : '🎵'}</span>${s}</div>`).join('')}
+        <div data-r="2" style="margin-top:auto;background:rgba(128,140,170,.14);border-radius:12px;padding:8px 10px;font-size:12px">🔒 Notification: <b>${S.playing ? SONGS[S.song] : 'Nothing playing'}</b></div></div>
+      <div class="mini" data-r="1">${S.playing ? '▶' : '⏸'} <b>${S.playing ? SONGS[S.song] : 'Tap a song'}</b><div class="bar"><i id="mbar"></i></div></div>` },
+};
+let scen = 'cart';
+const scenEl = $('#scen');
+Object.entries(SCEN).forEach(([k, s]) => { const b = document.createElement('button'); b.innerHTML = `<span>${s.icon}</span>${s.name}`; b.onclick = () => setScen(k); b.dataset.k = k; scenEl.appendChild(b); });
+function renderScen() {
+  const s = SCEN[scen], scr = $('#screen');
+  scr.classList.toggle('dark', S.dark);
+  scr.innerHTML = s.view();
+  $$('[data-act]', scr).forEach(b => b.onclick = trigger);
+  $$('[data-song]', scr).forEach(el => el.onclick = () => { S.song = +el.dataset.song; S.playing = true; trigger(null, true); });
+  const bar = $('#mbar'); if (bar && S.playing) { bar.style.transition = 'none'; bar.style.width = '0'; requestAnimationFrame(() => { bar.style.transition = 'width 8s linear'; bar.style.width = '85%'; }); }
+}
+function setScen(k) {
+  scen = k; const s = SCEN[k];
+  $$('button', scenEl).forEach(b => b.classList.toggle('on', b.dataset.k === k));
+  $('#seen').textContent = s.seen; $('#scenBtn').textContent = s.btn;
+  $('#readers').innerHTML = s.readers.map(r => `<li>${r}</li>`).join('');
+  $('#scenState').innerHTML = json(s.state());
+  renderScen();
+}
+const trigger = once('scen', async (e, skipAct) => {
+  const s = SCEN[scen];
+  if (!skipAct) s.act();
+  $('#scenState').innerHTML = json(s.state(), s.key); cls($('#scenState'), 'flash');
+  renderScen();
+  const lis = $$('#readers li');
+  for (let i = 0; i < lis.length; i++) {
+    lis[i].classList.add('on');
+    const el = $(`#screen [data-r="${i}"]`); if (el) { el.style.transformOrigin = 'center'; if (el.tagName !== 'DIV' || i === 2 || scen === 'cart') pop(el); else cls(el, 'flash'); }
+    await sleep(260);
+  }
+  await sleep(900); lis.forEach(l => l.classList.remove('on'));
+});
+$('#scenBtn').onclick = () => trigger();
+setScen('cart');
+
+/* ---------- 10 restaurant ---------- */
+$('#restBtn').onclick = once('rest', async () => {
+  const w = $('#waiter'), tray = $('#tray'), cap = $('#restCap'), fire = $('#fire'), ing = $('#ingr');
+  const say = h => { cap.innerHTML = h; cls(cap, 'popin'); };
+  tray.textContent = '📝'; say('1. The client sends a <b>request</b>: <code>GET /menu/masala-dosa</code>');
+  await sleep(500); await travel(w, [[240, 150], [600, 150]], 380);
+  say('2. The <b>server</b> receives it and runs the backend code.'); fire.setAttribute('opacity', 1); tray.textContent = '';
+  await sleep(700);
+  say('3. The server asks the <b>database</b> for what it needs.'); ing.setAttribute('opacity', 1);
+  await travel(ing, [[1000, 150], [720, 150]], 300); ing.setAttribute('opacity', 0); at(ing, 1000, 150);
+  await sleep(500); fire.setAttribute('opacity', 0);
+  tray.textContent = '🫓'; say('4. The server sends a <b>response</b>: <code>200 OK</code> + the data.');
+  await travel(w, [[600, 150], [240, 150]], 380);
+  say('5. The client shows the result. Enjoy your dosa! 😋'); tray.textContent = '';
+});
+
+/* ---------- 11 request/response ---------- */
+const REQ = {
+  get: { label: 'GET all products', m: 'GET', url: '/api/products', body: null, st: 200, stt: 'OK', res: '[\n  { "id": 1, "name": "Earbuds", "price": 1499 },\n  { "id": 2, "name": "Power bank", "price": 999 }\n]' },
+  post: { label: 'POST a new product', m: 'POST', url: '/api/products', body: '{ "name": "Charger", "price": 499 }', st: 201, stt: 'Created', res: '{ "id": 3, "name": "Charger", "price": 499 }' },
+  del: { label: 'DELETE product 3', m: 'DELETE', url: '/api/products/3', body: null, st: 200, stt: 'OK', res: '{ "deleted": true }' },
+  bad: { label: 'GET with a typo', m: 'GET', url: '/api/prodcts', body: null, st: 404, stt: 'Not Found', res: '{ "error": "Route not found" }' },
+};
+const MCOL = { GET: 'var(--ok)', POST: 'var(--redux)', PUT: 'var(--action)', DELETE: 'var(--danger)' };
+const stCol = s => s < 300 ? 'var(--ok)' : s < 500 ? 'var(--action)' : 'var(--danger)';
+Object.entries(REQ).forEach(([k, r]) => { const b = document.createElement('button'); b.className = 'btn ghost'; b.innerHTML = `<span style="color:${MCOL[r.m]}">${r.m}</span> ${r.url}`; b.title = r.label; b.onclick = () => sendReq(k); $('#rrBtns').appendChild(b); });
+const sendReq = once('rr', async k => {
+  let r = { ...REQ[k] };
+  if ($('#bugChk').checked) r = { ...r, st: 500, stt: 'Internal Server Error', res: '{ "error": "Something broke on the server" }' };
+  const env = $('#reqEnv'), res = $('#resEnv');
+  $('rect', env).style.fill = MCOL[r.m]; $('#reqEnvT').textContent = r.m;
+  $('#reqCard').innerHTML = `<b style="color:${MCOL[r.m]}">${r.m}</b> ${r.url}\nContent-Type: application/json${r.body ? '\n\n' + esc(r.body) : ''}`;
+  cls($('#reqCard').parentElement, 'flash');
+  $('#resCard').textContent = 'waiting…';
+  env.setAttribute('opacity', 1);
+  await travel(env, [[270, 65], [870, 65]], 300);
+  env.setAttribute('opacity', 0);
+  $('#spin').setAttribute('opacity', 1); await sleep(900); $('#spin').setAttribute('opacity', 0);
+  $('rect', res).style.fill = stCol(r.st); $('#resEnvT').textContent = r.st;
+  res.setAttribute('opacity', 1);
+  await travel(res, [[870, 135], [270, 135]], 300);
+  $('#resCard').innerHTML = `<span class="status" style="background:${stCol(r.st)}${r.st >= 400 && r.st < 500 ? ';color:#231a00' : ''}">${r.st} ${r.stt}</span>\n\n${esc(r.res)}`;
+  cls($('#resCard').parentElement, 'flash');
+  await sleep(600); res.setAttribute('opacity', 0);
+});
+
+/* ---------- 12 methods ---------- */
+const METH = [
+  { m: 'GET', crud: 'Read', what: 'Open your Instagram feed', code: '// Read: get data from the server\nconst res = await fetch("/api/posts");\nconst posts = await res.json();' },
+  { m: 'POST', crud: 'Create', what: 'Upload a new post', code: '// Create: send new data to the server\nawait fetch("/api/posts", {\n  method: "POST",\n  headers: { "Content-Type": "application/json" },\n  body: JSON.stringify({ caption: "Hello!" }),\n});' },
+  { m: 'PUT', crud: 'Update', what: 'Edit a caption', code: '// Update: change existing data\nawait fetch("/api/posts/7", {\n  method: "PUT",\n  headers: { "Content-Type": "application/json" },\n  body: JSON.stringify({ caption: "Edited!" }),\n});' },
+  { m: 'DELETE', crud: 'Delete', what: 'Delete a post', code: '// Delete: remove data\nawait fetch("/api/posts/7", { method: "DELETE" });' },
+];
+METH.forEach((x, i) => { const b = document.createElement('button'); b.className = 'm'; b.innerHTML = `<span class="verb" style="background:${MCOL[x.m]}${x.m === 'PUT' ? ';color:#231a00' : ''}">${x.m}</span><div class="crud">${x.crud}</div><div class="what">${x.what}</div>`; b.onclick = () => setMeth(i); $('#methods').appendChild(b); });
+function setMeth(i) { $$('#methods .m').forEach((b, k) => b.classList.toggle('on', k === i)); renderCode($('#mcode'), METH[i].code); cls($('#mcode'), 'popin'); }
+setMeth(0);
+
+/* ---------- 13 async ---------- */
+const ACODE = `export const fetchProducts = createAsyncThunk(
+  "products/fetch", async () => {
+    const res = await fetch("/api/products");
+    return res.json();
+  });
+
+// inside createSlice({ ... })
+extraReducers: (builder) => {
+  builder
+    .addCase(fetchProducts.pending, (state) => {
+      state.status = "loading"; })
+    .addCase(fetchProducts.fulfilled, (state, action) => {
+      state.status = "succeeded";
+      state.items = action.payload; })
+    .addCase(fetchProducts.rejected, (state) => {
+      state.status = "failed"; });
+}`;
+renderCode($('#acode'), ACODE);
+const A = { status: 'idle', items: [], error: null };
+const PRODUCTS = [['🎧', 'Earbuds', '₹1,499'], ['🔋', 'Power bank', '₹999'], ['⌚', 'Smart watch', '₹2,499'], ['🔌', 'Charger', '₹499']];
+function aRender(changed) {
+  $$('#s-async .statusline span').forEach(s => s.classList.toggle('on', s.dataset.s === A.status));
+  $('#aState').innerHTML = json({ products: { status: A.status, items: A.items.length ? `[${A.items.length} items]` : [], error: A.error } }, changed);
+  const ui = $('#aUI');
+  if (A.status === 'idle') ui.innerHTML = '<h4>🛍️ Products</h4><p class="small">Nothing loaded yet. Press “Load products”.</p>';
+  if (A.status === 'loading') ui.innerHTML = '<h4>🛍️ Products</h4>' + '<div class="sk"></div>'.repeat(4);
+  if (A.status === 'succeeded') ui.innerHTML = '<h4>🛍️ Products</h4>' + A.items.map((p, i) => `<div class="item popin" style="animation-delay:${i * .12}s">${p[0]} ${p[1]} <span>${p[2]}</span></div>`).join('');
+  if (A.status === 'failed') ui.innerHTML = '<h4>🛍️ Products</h4><div class="err popin">⚠️ Could not load products.<br><span style="font-weight:600">Check your connection and try again.</span></div>';
+}
+aRender();
+$('#asyncBtn').onclick = once('async', async () => {
+  const code = $('#acode'), fail = $('#failChk').checked;
+  A.status = 'idle'; A.items = []; A.error = null; aRender();
+  markLine(code, [0]); await sleep(500);
+  A.status = 'loading'; markLine(code, [9, 10]); aRender(['status']); await sleep(500);
+  const q = $('#aReq'); q.setAttribute('opacity', 1); markLine(code, [2]);
+  await travel(q, [[230, 26], [900, 26]], 280); q.setAttribute('opacity', 0);
+  await sleep(700);
+  const r = $('#aRes'); $('#aResR').style.fill = fail ? 'var(--danger)' : 'var(--ok)'; $('#aResT').textContent = fail ? '500' : '200';
+  r.setAttribute('opacity', 1); await travel(r, [[930, 54], [200, 54]], 280); r.setAttribute('opacity', 0);
+  if (fail) { A.status = 'failed'; A.error = 'Request failed with status 500'; markLine(code, [14, 15]); aRender(['status', 'error']); }
+  else { A.status = 'succeeded'; A.items = PRODUCTS; markLine(code, [11, 12, 13]); aRender(['status', 'items']); }
+});
+
+/* ---------- 14 quiz ---------- */
+const QUIZ = [
+  ['Which part of Redux decides the new state?', ['The component', 'The reducer', 'The action'], 1],
+  ['What does useSelector do?', ['Reads data from the store', 'Sends an action', 'Calls the server'], 0],
+  ['Which HTTP method creates new data?', ['GET', 'POST', 'DELETE'], 1],
+  ['The server replies 404. What does it mean?', ['Success', 'Server crashed', 'Not found'], 2],
+];
+$('#quiz').innerHTML = QUIZ.map((q, i) => `<div class="q"><p>${i + 1}. ${q[0]}</p><div class="opts">${q[1].map((o, k) => `<button data-q="${i}" data-k="${k}">${o}</button>`).join('')}</div></div>`).join('');
+$$('#quiz button').forEach(b => b.onclick = () => {
+  const q = QUIZ[+b.dataset.q], ok = +b.dataset.k === q[2];
+  b.classList.add(ok ? 'right' : 'wrong'); cls(b, ok ? 'pop' : 'shake');
+  if (ok) $$(`#quiz button[data-q="${b.dataset.q}"]`).forEach(x => x.disabled = true);
+});
+
+/* ---------- start ---------- */
+const h = parseInt((location.hash || '').slice(1), 10);
+show(h >= 1 && h <= slides.length ? h - 1 : 0);
+})();
+</script>
+</body>
+</html>
