@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java Complete Guide</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#64748b;--primary:#7c3aed;--primary2:#4f46e5;--code:#111827;--border:#e5e7eb}
+*{box-sizing:border-box;scroll-behavior:smooth}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.65}
+header{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;padding:18px 5%;box-shadow:0 4px 18px #0002}
+.header{max-width:1200px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:15px}
+.logo{font-size:25px;font-weight:800}.logo span{color:#fde047}
+button{border:0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700}
+#themeBtn{background:#ffffff22;color:white;border:1px solid #ffffff55}
+.layout{max-width:1200px;margin:auto;display:grid;grid-template-columns:270px 1fr;gap:25px;padding:25px}
+aside{position:sticky;top:90px;height:calc(100vh - 110px);overflow:auto;background:var(--card);padding:18px;border:1px solid var(--border);border-radius:16px}
+aside h3{margin-top:0}.search{width:100%;padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text);margin-bottom:12px}
+nav a{display:block;padding:8px 10px;color:var(--text);text-decoration:none;border-radius:8px;font-size:14px}
+nav a:hover{background:#7c3aed18;color:var(--primary)}
+main{min-width:0}.hero{background:linear-gradient(135deg,#eef2ff,#f5f3ff);border:1px solid #ddd6fe;border-radius:20px;padding:35px;margin-bottom:22px}
+.hero h1{font-size:42px;margin:0 0 8px}.hero p{color:var(--muted);font-size:17px}
+.badge{display:inline-block;background:#ede9fe;color:#6d28d9;padding:5px 10px;border-radius:20px;font-size:12px;font-weight:800}
+section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:25px;margin:20px 0}
+h2{color:var(--primary);margin-top:0;border-bottom:1px solid var(--border);padding-bottom:10px}
+h3{color:var(--primary2)}
+.cardgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.mini{padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
+code{font-family:Consolas,monospace}
+pre{position:relative;background:var(--code);color:#e5e7eb;padding:20px;border-radius:12px;overflow:auto}
+.copy{position:absolute;right:10px;top:10px;background:#ffffff18;color:white;font-size:12px}
+table{width:100%;border-collapse:collapse;margin:15px 0}th,td{border:1px solid var(--border);padding:10px;text-align:left}th{background:#f1f5f9}
+.dark{--bg:#0b1120;--card:#111827;--text:#e5e7eb;--muted:#94a3b8;--border:#243047}.dark .hero{background:#171331}.dark th{background:#1e293b}
+.tip{padding:13px 16px;border-left:4px solid #7c3aed;background:#7c3aed0d;border-radius:8px}
+footer{text-align:center;color:var(--muted);padding:30px}
+@media(max-width:850px){.layout{grid-template-columns:1fr;padding:12px}aside{position:relative;top:0;height:auto}.hero h1{font-size:32px}}
+</style>
+</head>
+<body>
+<header><div class="header"><div class="logo">☕ Java<span>Master</span></div><button id="themeBtn">🌙 Dark Mode</button></div></header>
+
+<div class="layout">
+<aside>
+<input class="search" id="search" placeholder="Search topics...">
+<h3>Java Course</h3>
+<nav id="nav">
+<a href="#intro">1. Introduction</a><a href="#jvm">2. JDK, JRE & JVM</a><a href="#syntax">3. First Program</a>
+<a href="#variables">4. Variables & Data Types</a><a href="#operators">5. Operators</a><a href="#input">6. Input</a>
+<a href="#conditions">7. Conditions</a><a href="#loops">8. Loops</a><a href="#arrays">9. Arrays</a>
+<a href="#strings">10. Strings</a><a href="#methods">11. Methods</a><a href="#oops">12. OOP</a>
+<a href="#constructors">13. Constructors</a><a href="#inheritance">14. Inheritance</a><a href="#polymorphism">15. Polymorphism</a>
+<a href="#abstraction">16. Abstraction</a><a href="#encapsulation">17. Encapsulation</a><a href="#interface">18. Interfaces</a>
+<a href="#packages">19. Packages</a><a href="#exceptions">20. Exceptions</a><a href="#collections">21. Collections</a>
+<a href="#generics">22. Generics</a><a href="#files">23. File Handling</a><a href="#threads">24. Multithreading</a>
+<a href="#lambda">25. Lambda</a><a href="#streams">26. Stream API</a><a href="#jdbc">27. JDBC</a>
+<a href="#java8">28. Java 8+ Features</a><a href="#practice">29. Practice</a><a href="#interview">30. Interview Questions</a>
+</nav>
+</aside>
+
+<main>
+<div class="hero"><span class="badge">COMPLETE JAVA COURSE</span><h1>Java Programming</h1><p>Beginner to advanced Java guide with concepts, syntax, examples, OOP, collections, exceptions, multithreading, streams and JDBC.</p></div>
+
+<section id="intro"><h2>1. Introduction to Java</h2><p>Java is a high-level, object-oriented, class-based programming language designed to be portable, secure and robust.</p>
+<div class="cardgrid"><div class="mini"><b>Platform Independent</b><br>Java bytecode runs on the JVM.</div><div class="mini"><b>Object Oriented</b><br>Programs are organized around objects and classes.</div><div class="mini"><b>Robust</b><br>Strong type checking and exception handling.</div><div class="mini"><b>Secure</b><br>Runtime checks and controlled memory access.</div></div></section>
+
+<section id="jvm"><h2>2. JDK, JRE and JVM</h2><ul><li><b>JVM:</b> Executes Java bytecode.</li><li><b>JRE:</b> JVM + libraries required to run Java applications.</li><li><b>JDK:</b> JRE + development tools such as <code>javac</code>.</li></ul>
+<div class="tip"><b>Flow:</b> Java source (.java) → javac → Bytecode (.class) → JVM → Machine code</div></section>
+
+<section id="syntax"><h2>3. First Java Program</h2><pre><button class="copy">Copy</button><code>public class Main {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}</code></pre>
+<p><b>public</b> = accessible, <b>static</b> = belongs to class, <b>void</b> = returns nothing, <b>main</b> = starting method, <b>String[] args</b> = command-line arguments.</p></section>
+
+<section id="variables"><h2>4. Variables & Data Types</h2><table><tr><th>Type</th><th>Example</th></tr><tr><td>int</td><td>int age = 20;</td></tr><tr><td>double</td><td>double price = 99.5;</td></tr><tr><td>char</td><td>char grade = 'A';</td></tr><tr><td>boolean</td><td>boolean pass = true;</td></tr><tr><td>String</td><td>String name = "Rishi";</td></tr></table>
+<pre><button class="copy">Copy</button><code>int age = 21;
+double salary = 45000.50;
+char grade = 'A';
+boolean active = true;
+String name = "Java";</code></pre></section>
+
+<section id="operators"><h2>5. Operators</h2><p>Arithmetic: <code>+ - * / %</code> | Relational: <code>== != &gt; &lt; &gt;= &lt;=</code> | Logical: <code>&& || !</code> | Assignment: <code>= += -= *= /=</code> | Unary: <code>++ --</code> | Ternary: <code>condition ? a : b</code></p>
+<pre><button class="copy">Copy</button><code>int a = 10, b = 3;
+System.out.println(a + b);
+System.out.println(a % b);
+System.out.println(a > b);</code></pre></section>
+
+<section id="input"><h2>6. User Input</h2><pre><button class="copy">Copy</button><code>import java.util.Scanner;
+
+Scanner sc = new Scanner(System.in);
+System.out.print("Enter name: ");
+String name = sc.nextLine();
+System.out.print("Enter age: ");
+int age = sc.nextInt();
+System.out.println(name + " is " + age + " years old.");</code></pre></section>
+
+<section id="conditions"><h2>7. Conditional Statements</h2><pre><button class="copy">Copy</button><code>int marks = 75;
+
+if (marks >= 90)
+    System.out.println("A Grade");
+else if (marks >= 60)
+    System.out.println("B Grade");
+else
+    System.out.println("Needs Improvement");
+
+switch (marks) {
+    case 100 -> System.out.println("Perfect");
+    case 75 -> System.out.println("Good");
+    default -> System.out.println("Other");
+}</code></pre></section>
+
+<section id="loops"><h2>8. Loops</h2><pre><button class="copy">Copy</button><code>for (int i = 1; i <= 5; i++)
+    System.out.println(i);
+
+int i = 1;
+while (i <= 5) {
+    System.out.println(i);
+    i++;
+}
+
+int j = 1;
+do {
+    System.out.println(j);
+    j++;
+} while (j <= 5);
+
+for (int x : new int[]{10,20,30})
+    System.out.println(x);</code></pre></section>
+
+<section id="arrays"><h2>9. Arrays</h2><pre><button class="copy">Copy</button><code>int[] numbers = {10, 20, 30, 40};
+
+System.out.println(numbers[0]);
+
+for (int n : numbers)
+    System.out.println(n);
+
+int[][] matrix = {{1,2},{3,4}};</code></pre></section>
+
+<section id="strings"><h2>10. Strings</h2><pre><button class="copy">Copy</button><code>String s = "Java Programming";
+
+System.out.println(s.length());
+System.out.println(s.toUpperCase());
+System.out.println(s.toLowerCase());
+System.out.println(s.contains("Java"));
+System.out.println(s.substring(0, 4));
+System.out.println(s.replace("Java", "Python"));</code></pre><p><b>StringBuilder</b> is useful for efficiently modifying strings.</p></section>
+
+<section id="methods"><h2>11. Methods</h2><pre><button class="copy">Copy</button><code>static int add(int a, int b) {
+    return a + b;
+}
+
+public static void main(String[] args) {
+    int result = add(10, 20);
+    System.out.println(result);
+}</code></pre><p>Methods can be overloaded by changing parameter lists.</p></section>
+
+<section id="oops"><h2>12. Object-Oriented Programming</h2><div class="cardgrid"><div class="mini"><b>Class</b><br>Blueprint for objects.</div><div class="mini"><b>Object</b><br>Instance of a class.</div><div class="mini"><b>Inheritance</b><br>Reuse properties and behavior.</div><div class="mini"><b>Polymorphism</b><br>One interface, multiple implementations.</div><div class="mini"><b>Abstraction</b><br>Hide implementation details.</div><div class="mini"><b>Encapsulation</b><br>Bundle data and methods together.</div></div></section>
+
+<section id="constructors"><h2>13. Constructors</h2><pre><button class="copy">Copy</button><code>class Student {
+    String name;
+    int age;
+
+    Student(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+}</code></pre><p>A constructor has the same name as its class and has no return type.</p></section>
+
+<section id="inheritance"><h2>14. Inheritance</h2><pre><button class="copy">Copy</button><code>class Animal {
+    void sound() {
+        System.out.println("Animal sound");
+    }
+}
+
+class Dog extends Animal {
+    void bark() {
+        System.out.println("Dog barks");
+    }
+}</code></pre><p>Java supports single, multilevel and hierarchical inheritance through classes. Multiple inheritance of classes is not supported.</p></section>
+
+<section id="polymorphism"><h2>15. Polymorphism</h2><h3>Method Overloading</h3><pre><code>int add(int a, int b) { return a+b; }
+double add(double a, double b) { return a+b; }</code></pre><h3>Method Overriding</h3><pre><code>class Dog extends Animal {
+    @Override
+    void sound() {
+        System.out.println("Bark");
+    }
+}</code></pre></section>
+
+<section id="abstraction"><h2>16. Abstraction</h2><pre><button class="copy">Copy</button><code>abstract class Vehicle {
+    abstract void start();
+
+    void stop() {
+        System.out.println("Stopped");
+    }
+}
+
+class Car extends Vehicle {
+    void start() {
+        System.out.println("Car starts");
+    }
+}</code></pre></section>
+
+<section id="encapsulation"><h2>17. Encapsulation</h2><pre><button class="copy">Copy</button><code>class Account {
+    private double balance;
+
+    public void setBalance(double balance) {
+        if (balance >= 0) this.balance = balance;
+    }
+
+    public double getBalance() {
+        return balance;
+    }
+}</code></pre></section>
+
+<section id="interface"><h2>18. Interfaces</h2><pre><button class="copy">Copy</button><code>interface Payment {
+    void pay();
+}
+
+class UPI implements Payment {
+    public void pay() {
+        System.out.println("Paid using UPI");
+    }
+}</code></pre></section>
+
+<section id="packages"><h2>19. Packages & Access Modifiers</h2><p>Packages organize related classes. Access modifiers: <b>public</b>, <b>protected</b>, default and <b>private</b>.</p><pre><code>package myapp;
+
+import java.util.ArrayList;</code></pre></section>
+
+<section id="exceptions"><h2>20. Exception Handling</h2><pre><button class="copy">Copy</button><code>try {
+    int result = 10 / 0;
+} catch (ArithmeticException e) {
+    System.out.println("Cannot divide by zero");
+} finally {
+    System.out.println("Finished");
+}</code></pre><p>Important keywords: <code>try</code>, <code>catch</code>, <code>finally</code>, <code>throw</code>, <code>throws</code>.</p></section>
+
+<section id="collections"><h2>21. Collections Framework</h2><table><tr><th>Collection</th><th>Use</th></tr><tr><td>ArrayList</td><td>Resizable ordered list</td></tr><tr><td>LinkedList</td><td>Linked list implementation</td></tr><tr><td>HashSet</td><td>Unique elements</td></tr><tr><td>TreeSet</td><td>Sorted unique elements</td></tr><tr><td>HashMap</td><td>Key-value pairs</td></tr><tr><td>TreeMap</td><td>Sorted key-value pairs</td></tr></table>
+<pre><button class="copy">Copy</button><code>import java.util.*;
+
+ArrayList&lt;String&gt; names = new ArrayList&lt;&gt;();
+names.add("Rishi");
+names.add("Java");
+
+HashMap&lt;Integer,String&gt; map = new HashMap&lt;&gt;();
+map.put(1, "Java");
+map.put(2, "Python");</code></pre></section>
+
+<section id="generics"><h2>22. Generics</h2><pre><button class="copy">Copy</button><code>class Box&lt;T&gt; {
+    private T value;
+
+    Box(T value) {
+        this.value = value;
+    }
+
+    T getValue() {
+        return value;
+    }
+}
+
+Box&lt;Integer&gt; box = new Box&lt;&gt;(100);</code></pre></section>
+
+<section id="files"><h2>23. File Handling</h2><pre><button class="copy">Copy</button><code>import java.io.*;
+
+FileWriter writer = new FileWriter("data.txt");
+writer.write("Hello Java");
+writer.close();
+
+BufferedReader reader =
+    new BufferedReader(new FileReader("data.txt"));
+
+String line;
+while ((line = reader.readLine()) != null)
+    System.out.println(line);
+
+reader.close();</code></pre></section>
+
+<section id="threads"><h2>24. Multithreading</h2><pre><button class="copy">Copy</button><code>class MyTask extends Thread {
+    public void run() {
+        System.out.println("Thread running");
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        MyTask t = new MyTask();
+        t.start();
+    }
+}</code></pre><p>Learn thread lifecycle, Runnable, synchronization, locks, executors and concurrent collections.</p></section>
+
+<section id="lambda"><h2>25. Lambda Expressions</h2><pre><button class="copy">Copy</button><code>interface Greeting {
+    void sayHello(String name);
+}
+
+Greeting g = name -> System.out.println("Hello " + name);
+g.sayHello("Rishi");</code></pre></section>
+
+<section id="streams"><h2>26. Stream API</h2><pre><button class="copy">Copy</button><code>List&lt;Integer&gt; nums = List.of(1,2,3,4,5,6);
+
+nums.stream()
+    .filter(n -> n % 2 == 0)
+    .map(n -> n * n)
+    .forEach(System.out::println);</code></pre><p>Important operations: <code>filter()</code>, <code>map()</code>, <code>sorted()</code>, <code>distinct()</code>, <code>reduce()</code>, <code>collect()</code>, <code>forEach()</code>.</p></section>
+
+<section id="jdbc"><h2>27. JDBC</h2><p>JDBC connects Java applications with relational databases.</p><pre><button class="copy">Copy</button><code>Connection con = DriverManager.getConnection(
+    "jdbc:mysql://localhost:3306/test",
+    "root",
+    "password"
+);
+
+PreparedStatement ps =
+    con.prepareStatement("SELECT * FROM students");
+
+ResultSet rs = ps.executeQuery();
+
+while (rs.next()) {
+    System.out.println(rs.getString("name"));
+}
+
+con.close();</code></pre></section>
+
+<section id="java8"><h2>28. Java 8+ Important Features</h2><ul><li>Lambda expressions</li><li>Functional interfaces</li><li>Stream API</li><li>Method references</li><li>Optional</li><li>Default and static interface methods</li><li>Modern switch expressions</li><li>Records and sealed classes in newer Java versions</li></ul></section>
+
+<section id="practice"><h2>29. Practice Programs</h2><ol><li>Hello World</li><li>Even or Odd</li><li>Prime Number</li><li>Factorial</li><li>Fibonacci Series</li><li>Palindrome Number/String</li><li>Reverse Number/String</li><li>Largest element in array</li><li>Sorting an array</li><li>Student grade calculator</li><li>Bank account system</li><li>Employee management system</li><li>Calculator using switch</li><li>Number guessing game</li><li>CRUD application using JDBC</li></ol></section>
+
+<section id="interview"><h2>30. Important Interview Questions</h2><ol><li>What is Java?</li><li>Why is Java platform independent?</li><li>Difference between JDK, JRE and JVM?</li><li>What is bytecode?</li><li>Explain OOP principles.</li><li>Class vs object?</li><li>Overloading vs overriding?</li><li>Abstract class vs interface?</li><li>String vs StringBuilder vs StringBuffer?</li><li>ArrayList vs LinkedList?</li><li>HashMap vs HashSet?</li><li>Checked vs unchecked exceptions?</li><li>What is multithreading?</li><li>What is synchronization?</li><li>What are lambda expressions?</li><li>What is Stream API?</li><li>What is JDBC?</li><li>What is garbage collection?</li><li>What are final, finally and finalize?</li><li>What is the difference between == and equals()?</li></ol></section>
+
+<footer>☕ JavaMaster • Learn Java from basics to advanced</footer>
+</main>
+</div>
+
+<script>
+const themeBtn=document.getElementById('themeBtn');
+themeBtn.onclick=()=>{document.body.classList.toggle('dark');themeBtn.textContent=document.body.classList.contains('dark')?'☀️ Light Mode':'🌙 Dark Mode';};
+document.querySelectorAll('.copy').forEach(btn=>{
+ btn.onclick=()=>{const code=btn.parentElement.querySelector('code').innerText;navigator.clipboard.writeText(code);btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1200);}
+});
+const search=document.getElementById('search');
+search.addEventListener('input',()=>{
+ const q=search.value.toLowerCase();
+ document.querySelectorAll('#nav a').forEach(a=>a.style.display=a.textContent.toLowerCase().includes(q)?'block':'none');
+});
+</script>
+</body>
+</html>
